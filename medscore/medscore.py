@@ -22,12 +22,14 @@ class MedScore(object):
             server_decomposition: str,
             model_name_verification: str,
             server_verification: str,
-            verification_mode: str
+            verification_mode: str,
+            response_key: str
     ):
         self.decomposer = Decomposer(
             model_name=model_name_decomposition,
             server_path=server_decomposition
         )
+        self.response_key = response_key
 
     def decompose(
         self,
@@ -36,12 +38,12 @@ class MedScore(object):
         # Split each response
         decomposer_input = []
         for item in dataset:
-            sentences = parse_sentences(item["augment_withquestion"])
+            sentences = parse_sentences(item[self.response_key])
             for idx, sentence in enumerate(sentences):
                 decomposer_input.append({
                     "id": item["id"],
                     "sentence_id": idx,
-                    "context": item["augment_withquestion"],
+                    "context": item[self.response_key],
                     "sentence": sentence["text"],
                 })
 
@@ -63,10 +65,11 @@ def parse_args():
     parser.add_argument("--input_file", required=True, type=str)
     parser.add_argument("--output_dir", default="", type=str)
     parser.add_argument("--model_name_decomposition", type=str, default="gpt-4o-mini")
-    parser.add_argument("--server_decomposition", type=str, default="https://api.openai.com")
+    parser.add_argument("--server_decomposition", type=str, default="https://api.openai.com/v1")
     parser.add_argument("--model_name_verification", type=str, default="gpt-4o-mini")
-    parser.add_argument("--server_verification", type=str, default="https://api.openai.com")
+    parser.add_argument("--server_verification", type=str, default="https://api.openai.com/v1")
     parser.add_argument("--verification_mode", type=str, choices=["internal", "medrag"], default="internal")
+    parser.add_argument("--response_key", type=str, default="response")
     return parser.parse_args()
 
 
@@ -79,7 +82,8 @@ if __name__ == '__main__':
         server_decomposition=args.server_decomposition,
         model_name_verification=args.model_name_verification,
         server_verification=args.server_verification,
-        verification_mode=args.verification_mode
+        verification_mode=args.verification_mode,
+        response_key=args.response_key
     )
 
     # Load data
