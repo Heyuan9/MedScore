@@ -43,14 +43,13 @@ for item in data:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-        # this is the factscore prompt
+        # this is the factscore prompt, with no context key.
                 # {"role": "system", "content": system_prompt},
                 # {
                 #     "role": "user",
                 #     "content": f"Please breakdown the following sentence into independent facts: {sentence}"
                 # }
-        # this is the medscore prompt
-
+        # this is the medscore prompt with context key.
                 {"role": "system", "content": system_prompt},
                 {
                     "role": "user",
