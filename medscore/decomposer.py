@@ -5,6 +5,7 @@ Decomposer
 import os
 from functools import partial
 import asyncio
+from typing import List, Any, Optional, Dict
 
 import jsonlines
 from tqdm import tqdm
@@ -27,7 +28,7 @@ class Decomposer(object):
             batch_size: int = 32
     ):
         self.client = AsyncOpenAI(
-            server_path
+            base_url=server_path
         )
         self.model_name = model_name
         self.system_prompt = system_prompt

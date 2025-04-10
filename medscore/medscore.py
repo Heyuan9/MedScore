@@ -36,12 +36,12 @@ class MedScore(object):
         # Split each response
         decomposer_input = []
         for item in dataset:
-            sentences = parse_sentences(item["response"])
+            sentences = parse_sentences(item["augment_withquestion"])
             for idx, sentence in enumerate(sentences):
                 decomposer_input.append({
                     "id": item["id"],
                     "sentence_id": idx,
-                    "context": item["response"],
+                    "context": item["augment_withquestion"],
                     "sentence": sentence["text"],
                 })
 
