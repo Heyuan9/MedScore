@@ -107,6 +107,8 @@ def parse_args():
     parser.add_argument("--input_file", required=True, type=str)
     parser.add_argument("--output_dir", default="", type=str)
     parser.add_argument("--response_key", type=str, default="response")
+    parser.add_argument("--decompose_only", action="store_true")
+    parser.add_argument("--verify_only", action="store_true")
     # Decomposition
     parser.add_argument("--decomposition_mode", type=str, choices=["medscore", "factscore", "dndscore", "custom"], default="medscore")
     parser.add_argument("--model_name_decomposition", type=str, default="gpt-4o-mini")
@@ -155,22 +157,28 @@ if __name__ == '__main__':
     with jsonlines.open(args.input_file) as reader:
         dataset = [item for item in reader.iter()]
 
-    # If pre-computed
-    # with jsonlines.open(os.path.join(args.output_dir, "decompositions.jsonl"), 'r') as reader:
-    #     decompositions = [item for item in reader.iter()]
-    # with jsonlines.open(os.path.join(args.output_dir, "verifications.jsonl"), 'r') as reader:
-    #     verifications = [item for item in reader.iter()]
-
-    # Batch decompose. Save intermediate.
-    decompositions = scorer.decompose(dataset)
     decomp_output_file = os.path.join(args.output_dir, "decompositions.jsonl")
-    with jsonlines.open(decomp_output_file, 'w') as writer:
-        writer.write_all(decompositions)
+    verif_output_file = os.path.join(args.output_dir, "verifications.jsonl")
+    output_file = os.path.join(args.output_dir, "medscore_output.jsonl")
+
+    # Decompose and save intermediate
+    if not args.verify_only:
+        # Batch decompose. Save intermediate.
+        decompositions = scorer.decompose(dataset)
+        with jsonlines.open(decomp_output_file, 'w') as writer:
+            writer.write_all(decompositions)
+
+        if args.decompose_only:
+            exit(0)
+
+    if args.verify_only:
+        # Load pre-computed decompositions.
+        with jsonlines.open(os.path.join(args.output_dir, "decompositions.jsonl"), 'r') as reader:
+            decompositions = [item for item in reader.iter()]
 
     # Batch verify. Save intermediate.
     verifications = scorer.verify(decompositions)
-    output_file = os.path.join(args.output_dir, "verifications.jsonl")
-    with jsonlines.open(output_file, 'w') as writer:
+    with jsonlines.open(verif_output_file, 'w') as writer:
         writer.write_all(verifications)
 
     # Combine
@@ -195,6 +203,5 @@ if __name__ == '__main__':
             combined_output[idx]["score"] = sum(claim_scores) / len(claim_scores)
 
     combined_output = [v for k, v in combined_output.items()]
-    output_file = os.path.join(args.output_dir, "medscore_output.jsonl")
     with jsonlines.open(output_file, 'w') as writer:
         writer.write_all(combined_output)
