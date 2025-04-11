@@ -14,9 +14,9 @@ from openai import AsyncOpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 import nest_asyncio
 
-from utils import chunker
-from prompts import INTERNAL_KNOWLEDGE_PROMPT
-from medrag_retriever import MedRAGRetriever
+from .utils import chunker
+from .prompts import INTERNAL_KNOWLEDGE_PROMPT
+from .medrag_retriever import MedRAGRetriever
 
 nest_asyncio.apply()
 
@@ -27,7 +27,8 @@ class Verifier(object):
             server_path: str,
             model_name: str,
             random_state: int = 42,
-            batch_size: int = 32
+            batch_size: int = 32,
+            **kwargs,  # Ignore options passed that do not matter to this class
     ):
         self.client = AsyncOpenAI(
             base_url=server_path
@@ -135,26 +136,50 @@ class InternalVerifier(Verifier):
         return messages
 
 
+class ProvidedEvidenceVerifier(Verifier):
+    def __init__(
+            self,
+            id_to_evidence: Dict[str, str],
+            *args,
+            **kw
+    ):
+        super().__init__(*args, **kw)
+        self.id_to_evidence = id_to_evidence
+
+    """Verify claims against a pre-provided `evidence` key"""
+    def prepare_verification_input(self, decompositions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        verification_input = []
+        for d in decompositions:
+            d["evidence"] = self.id_to_evidence[d['id']]
+            verification_input.append(d)
+        return verification_input
+
+    def format_input(self, evidence: str, claim: str) -> str:
+        return f"""Answer the question based on the given context.\n\n{evidence}\n\nInput: {claim} True or False?\nOutput:"""
+
+    def prepare_messages(self, verification_input: List[Dict[str, Any]]) -> List[List[Dict[str, Any]]]:
+        messages = []
+        for d in verification_input:
+            formatted_input = self.format_input(d['evidence'], d['claim'])
+            messages.append([
+                {"role": "user", "content": formatted_input}
+            ])
+        return messages
+
+
 class MedRAGVerifier(Verifier):
     def __init__(
         self,
-        server_path: str,
-        model_name: str,
-        random_state: int = 42,
-        batch_size: int = 32,
         retriever_name: str = "MedCPT",
         corpus_name: str = "MEDIC",
         db_dir: str = os.environ.get("MEDRAG_CORPUS", "./corpus"),
         HNSW: bool = False,
         cache: bool = False,
-        n_returned_docs: int = 5
+        n_returned_docs: int = 5,
+        *args,
+        **kw
     ):
-        super().__init__(
-            server_path=server_path,
-            model_name=model_name,
-            random_state=random_state,
-            batch_size=batch_size
-        )
+        super().__init__(*args, **kw)
         self.retriever = MedRAGRetriever(
             retriever_name=retriever_name,
             corpus_name=corpus_name,
@@ -167,7 +192,7 @@ class MedRAGVerifier(Verifier):
     def prepare_verification_input(self, decompositions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         verification_input = []
         n_iter = len(decompositions) // self.batch_size
-        for batch in tqdm(chunker(decompositions, self.batch_size), desc="Retrieving MedRAG", total=n_iter):
+        for batch in tqdm(chunker(decompositions, self.batch_size), desc="Retrieving MedRAG", total=n_iter, ncols=0):
             retrieved_all = self.retriever(query=[d['claim'] for d in batch])
             for decomp, retrieved in zip(batch, retrieved_all):
                 v_input = {k: v for k, v in decomp.items()}

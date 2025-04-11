@@ -138,3 +138,102 @@ Please breakdown the following sentence into independent facts: During his profe
 """
 
 INTERNAL_KNOWLEDGE_PROMPT = f"""You are an assistant who verifies whether a claim from a medical response is True. You should rely exclusively on your own knowledge and always output 'True' or 'False' first. If there is not enough context or you are unable to verify the claim, then output 'False'."""
+
+DND_PROMPT = """Ambiguity Criteria: Ambiguity manifests in diverse forms, including:
+- Similar names denoting distinct entities.
+- Varied interpretations stemming from insufficient information.
+- Multiple understandings arising from vague or unclear information.
+
+Instructions:
+- You are given a paragraph, and one sentence from the paragraph to decompose and decontextualize.
+- First decompose the sentence into subclaims. Only use information from the sentence, and do not add any external information.
+- Then using those subclaims, write a decontextualized version of each subclaim.
+- In the decontextualized version, include all necessary information to disambiguate any entities or events in the subclaim using the ambiguity criteria above.
+- In the decontextualized version, only use information from the paragraph. Do not add any external information.
+- Provide an explanation of what ambiguities need to be resolved
+
+Format your response as a combination of decomposition and a dictionary with pairs of context and subclaims:
+##PARAGRAPH##: <paragraph>
+##SENTENCE##: <sentence>
+##SUBCLAIMS##:
+<list-of-subclaims>
+##EXPLANATION##:
+<explanations>
+##CONTEXT-SUBCLAIM PAIRS##:
+[
+    {"subclaim": <subclaim1>, "decontextualized": <context1>},
+    {"subclaim": <subclaim2>, "decontextualized": <context2>},
+    ...
+]
+
+Example 1:
+##PARAGRAPH##: Michael Collins (born October 31, 1930) is a retired American astronaut and test pilot who was the Command Module Pilot for the Apollo 11 mission in 1969. He orbited the Moon in the command module Columbia while Neil Armstrong and Buzz Aldrin made their historic landing. Born in Rome, Italy, Collins graduated from the U.S. Military Academy in 1952, joining a family tradition of military service, and went on to become a test pilot in the U.S. Air Force. Selected as an astronaut in 1963, he flew two space missions, Gemini 10 in 1966 and Apollo 11 in 1969, making him one of only 24 people to travel to the Moon. Collins was an accomplished astronaut, becoming the fourth person to conduct a spacewalk and the first to perform multiple spacewalks. After leaving NASA in 1970, he served as Assistant Secretary of State for Public Affairs, later directing the National Air and Space Museum. He also held senior roles at the Smithsonian and in private aerospace, eventually founding his own consulting firm. Collins and his Apollo 11 crewmates received the Presidential Medal of Freedom in 1969 and the Congressional Gold Medal in 2011.
+##SENTENCE##: Michael Collins (born October 31, 1930) is a retired American astronaut and test pilot who was the Command Module Pilot for the Apollo 11 mission in 1969.
+##SUBCLAIMS##:
+- Michael Collins was born in October.
+- Michael Collins was born on the 31st day of a month.
+- Michael Collins was born in 1930.
+- Michael Collins is retired.
+- Michael Collins is American.
+- Michael Collins was an astronaut.
+- Michael Collins was a test pilot.
+- Michael Collins participated in the Apollo 11 mission.
+- Michael Collins's participation in the Apollo 11 mission occurred in 1969.
+- The Apollo 11 mission was active in 1969.
+- The day of Michael Collins's birth occurred before his year of participation in the Apollo 11 mission.
+- The Apollo 11 mission had a Command Module Pilot.
+- Michael Collins's role in the Apollo 11 mission was as the Command Module Pilot.
+##EXPLANATION##:
+"Michael Collins" needs to be disambiguated as the astronaut associated with the Apollo 11 mission to distinguish him from other potential individuals with similar names.
+##CONTEXT-SUBCLAIM PAIRS##:
+[
+    {"subclaim": "Michael Collins was born in October.", "decontextualized": "Michael Collins, the retired American astronaut and test pilot, was born in October."},
+    {"subclaim": "Michael Collins was born on the 31st day of a month.", "decontextualized": "Michael Collins, the retired American astronaut and test pilot, was born on the 31st day of a month."},
+    {"subclaim": "Michael Collins was born in 1930.", "decontextualized": "Michael Collins, the retired American astronaut and test pilot, was born in 1930."},
+    {"subclaim": "Michael Collins is retired.", "decontextualized": "Michael Collins, the retired American astronaut and test pilot, is retired."},
+    {"subclaim": "Michael Collins is American.", "decontextualized": "Michael Collins, the American astronaut, is American."},
+    {"subclaim": "Michael Collins was an astronaut.", "decontextualized": "Michael Collins, the retired American astronaut and Command Module Pilot for the Apollo 11 mission, was an astronaut."},
+    {"subclaim": "Michael Collins was a test pilot.", "decontextualized": "Michael Collins, the retired American astronaut and test pilot, was the Command Module Pilot for the Apollo 11 mission in 1969."},
+    {"subclaim": "Michael Collins participated in the Apollo 11 mission.", "decontextualized": "Michael Collins, the retired American astronaut and test pilot, participated in the Apollo 11 mission."},
+    {"subclaim": "Michael Collins's participation in the Apollo 11 mission occurred in 1969.", "decontextualized": "Michael Collins's participation in the Apollo 11 mission as the Command Module Pilot occurred in 1969."},
+    {"subclaim": "The Apollo 11 mission was active in 1969.", "decontextualized": "The Apollo 11 mission, which involved human spaceflight to the Moon, was active in 1969."},
+    {"subclaim": "The day of Michael Collins's birth occurred before his year of participation in the Apollo 11 mission.", "decontextualized": "The day of Michael Collins's birth on October 31, 1930, occurred before his year of participation in the Apollo 11 mission."},
+    {"subclaim": "The Apollo 11 mission had a Command Module Pilot.", "decontextualized": "The Apollo 11 mission had Michael Collins as its Command Module Pilot."},
+    {"subclaim": "Michael Collins's role in the Apollo 11 mission was as the Command Module Pilot.", "decontextualized": "Michael Collins's role in the Apollo 11 mission was as the Command Module Pilot."}
+]
+
+Example 2:
+##PARAGRAPH##: Stephen Miller (born August 23, 1985) is an American political advisor who served as a senior advisor for policy and director of speechwriting to President Donald Trump. Miller has been described as the architect of Trump's controversial immigration policies, and has previously worked for Alabama Senator Jeff Sessions on immigration issues. Miller was instrumental in shaping several of Trump's key policies, including the travel ban, a reduction in refugee admissions, and family separations at the border. He began his career in communications roles for conservative legislators, including Senators Jeff Sessions, Michele Bachmann, and John Shadegg. As Trump's speechwriter, Miller helped draft the inaugural address and served as a trusted advisor from the early days of the administration. He also played a significant role in the resignation of Secretary of Homeland Security Kirstjen Nielsen, whom he deemed insufficiently strict on immigration. As a White House spokesperson, Miller made several unsubstantiated claims about election fraud and promoted content from white nationalist sources, leading to his inclusion on the Southern Poverty Law Center's list of extremists.
+##SENTENCE##: Miller has been described as the architect of Trump's controversial immigration policies, and has previously worked for Alabama Senator Jeff Sessions on immigration issues.
+##SUBCLAIMS##:
+- Miller has been described.
+- Miller has been described as an architect.
+- Miller has been described as an architect of Trump's controversial immigration policies.
+- Trump has immigration policies.
+- Trump's immigration policies are controversial.
+- Miller worked for Jeff Sessions.
+- Jeff Sessions is a Senator.
+- Jeff Sessions represents Alabama.
+- Miller worked on immigration issues.
+- Miller's work for Jeff Sessions involved immigration issues.
+##EXPLANATION##:
+"Miller" needs to be disabiguated as Stephen Miller, a political advisor for Donald Trump, to avoid confusion with other individuals with the same name. Clarify that "Trump's immigration policies" refers specifically to policies developed during Donald Trump's presidency, as "Trump" alone may be ambiguous in a different context.
+##CONTEXT-SUBCLAIM PAIRS##:
+[
+    {"subclaim": "Miller has been described.", "decontextualized": "Miller, the architect of Trump's controversial immigration policies, has been described."},
+    {"subclaim": "Miller has been described as an architect.", "decontextualized": "Miller, who has been described as the architect of Trump's controversial immigration policies, has been described as an architect."},
+    {"subclaim": "Miller has been described as an architect of Trump's controversial immigration policies.", "decontextualized": "Stephen Miller has been described as an architect of Trump's controversial immigration policies."},
+    {"subclaim": "Trump has immigration policies.", "decontextualized": "Donald Trump has immigration policies."},
+    {"subclaim": "Trump's immigration policies are controversial.", "decontextualized": "Donald Trump's immigration policies are controversial."},
+    {"subclaim": "Miller worked for Jeff Sessions.", "decontextualized": "Miller, the architect of Trump's controversial immigration policies, worked for Jeff Sessions."},
+    {"subclaim": "Jeff Sessions is a Senator.", "decontextualized": "Jeff Sessions is a Senator from Alabama."},
+    {"subclaim": "Jeff Sessions represents Alabama.", "decontextualized": "Jeff Sessions represents the state of Alabama."},
+    {"subclaim": "Miller worked on immigration issues.", "decontextualized": "Miller, the architect of Trump's controversial immigration policies, worked on immigration issues."},
+    {"subclaim": "Miller's work for Jeff Sessions involved immigration issues.", "decontextualized": "Stephen Miller's work for Jeff Sessions involved immigration issues."}
+]
+
+Your task:
+##PARAGRAPH##: {context}
+##SENTENCE##: {sentence}
+##SUBCLAIMS##:"""
+

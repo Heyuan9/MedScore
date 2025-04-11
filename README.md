@@ -28,28 +28,53 @@ If you use this tool, please cite
 
     ```bash
    export OPENAI_API_KEY=""
+   export TOGETHER_API_KEY=""
     ```
+
+3. [Optional] Set `MEDRAG_CORPUS` environment variable.
+
+    ```bash
+   export MEDRAG_CORPUS=""
+    ```
+
+Setting this variable makes sure that the MedRAG corpus will only be downloaded once.
+
 
 ## Running MedScore
 
 MedScore can be run from the command line. The options are explained below.
 
 ```bash
-python
+python -m medscore.medscore --input_file ""
 ```
 
-- `input_file`: Path to the input data file. It should be in `jsonl` format.
-  - `id`: A unique identifier for the instance.
-  - `repsonse`: The text response from the medical chatbot.
-  - Any other metadata.
-- `output_dir`: Path to the output directory. The default is the current directory. The name of the output file is `medscore_{input_file}`.
-- `model_name_decomposition`: The name of the model for decomposing the response into claims. It should the model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or locally-hosted vLLM model.
-- `model_name_verification`: The name of the model for decomposing the response into claims. It should the model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or locally-hosted vLLM model.
-- `verification_mode`: One of the following:
-  - `medrag`: Verify the `response` against MedCorp from [Benchmarking Retrieval-Augmented Generation for Medicine (Xiong et al., Findings 2024)](https://aclanthology.org/2024.findings-acl.372/). The default settings retrieve the top 5 passages from PubMed, StatPearls, and academic textbooks with the `MedCPT` encoder.
-  - `internal`: Verify against the internal knowledge of an LLM. 
-- `server_decomposition`: The server path for the decomposition model. E.g., for OpenAI models the server is `https://api.openai.com`.
-- `server_verification`: The server path for the verification model. E.g., for OpenAI models the server is `https://api.openai.com`.
+- General settings
+  - `input_file`: Path to the input data file. It should be in `jsonl` format.
+    - `id`: A unique identifier for the instance.
+    - `repsonse`: The text response from the medical chatbot. This key can be changed with `--response_key`.
+    - Any other metadata.
+  - `output_dir`: Path to the output directory. The output files are `decompositions.jsonl`, `verifications.jsonl`, and `medscore_output.jsonl`.
+    - Default: current directory
+- Decomposition-related settings
+  - `model_name_decomposition`: The name of the model for decomposing the response into claims. It should the model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or locally-hosted vLLM model.
+    - Default: `gpt-4o-mini`
+  - `server_decomposition`: The server path for the decomposition model. 
+    - Default: `https://api.openai.com/v1`
+  - `response_key`: The `jsonl` key corresponding to the text for decomposition.
+    - Default: `response`.
+- Verification-related settings
+  - `model_name_verification`: The name of the model for decomposing the response into claims. It should the model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or locally-hosted vLLM model.
+    - Default: `gpt-4o-mini`
+  - `verification_mode`: The method for verification.
+    - Options:
+      - `medrag`: Verify the `response` against MedCorp from [Benchmarking Retrieval-Augmented Generation for Medicine (Xiong et al., Findings 2024)](https://aclanthology.org/2024.findings-acl.372/). The default settings retrieve the top 5 passages from PubMed, StatPearls, and academic textbooks with the `MedCPT` encoder.
+      - `internal`: Verify against the internal knowledge of an LLM. 
+      - `provided`: Verify against pre-collected user-provided evidence. Requires `provided_evidence_path` to be set.
+    - Default: `internal`
+  - `server_verification`: The server path for the verification model. 
+    - Default: `https://api.openai.com/v1`
+  - `provided_evidence_path`: Path to `json` file in `{"{id}": "{evidence}"}` format, where the `id` is the same as the entry id in `input_file`.
+
 
 Example settings for decomposing and verifying with `GPT4o`:
 
@@ -57,7 +82,7 @@ Example settings for decomposing and verifying with `GPT4o`:
 --model_name_decomposition gpt-4o \
 --model_name_verification gpt-4o \
 --verification_mode internal \
---server_decomposition "https://api.openai.com" \
+--server_decomposition "https://api.openai.com/v1" \
 --server_verification "https://api.openai.com" \
 ```
 
@@ -66,19 +91,115 @@ Example settings for decomposing with GPT4o and verifying with MedRag against a 
 --model_name_decomposition gpt-4o \
 --model_name_verification "mistralai/Mistral-Small-24B-Instruct-2501" \
 --verification_mode medrag \
---server_decomposition "https://api.openai.com" \
+--server_decomposition "https://api.openai.com/v1" \
 --server_verification "http://localhost:8000" \
 ```
 
-The output file is in `jsonl` format where each entry looks like this:
+### Program output
+
+For flexibility, the `medscore.py` script saves intermediate output of the decompositions, verification, and the final combined file.
+
+**Decompositions**
+
+The output from the decomposition step is `decompositions.jsonl` and has the following format:
+
 ```json
 {
-  "id": ,
-  "response": ,
-  "claims": ,
-  "score": 
+  "id": {},
+  "sentence": {},
+  "sentence_id": {},
+  "claim": {},
+  "claim_id": {}
 }
 ```
+
+There is one entry for every claim for every sentence. The `claim` key can be `None` if a sentence has no claims.
+
+**Verifications**
+
+The output from the verification step is `verificcations.jsonl` and has the following format:
+
+```json
+{
+  "id": {},
+  "sentence": {},
+  "sentence_id": {},
+  "claim": {},
+  "claim_id": {},
+  "evidence": [{
+    "id": {},
+    "title": {},
+    "text": {},
+    "score": {}
+  }],
+  "raw": {},
+  "score": {}
+}
+```
+
+There is one entry for every claim. Claims that were `None` from the decomposition step are filtered before being passed to the verifier. 
+The `evidence` key can change based on the verification setting. 
+
+- `medrag`
+    ```json
+      "evidence": [{
+        "id": {},
+        "title": {},
+        "text": {},
+        "score": {}
+      }]
+    ```
+
+where the `id`, `title`, and `text` correspond to the retrieved entries in MedRAG. `score` is the similarity score based on the retriever.
+
+- `internal`
+    ```json
+      "evidence": None
+    ```
+
+In the `internal` setting, the model is not prompted with evidence.
+
+- `provided`
+
+    ```json
+      "evidence": "{evidence from provided_evidence_path}"
+    ```
+
+
+**Combined output**
+
+The final output file combines the decompositions and verifications by `id`.
+
+```json
+{
+  "id": {},
+  "score": {},
+  "claims": [{
+      "claim": {},
+      "sentence": {},
+      "evidence": {},
+      "raw": {},
+      "score": {}
+    }]
+}
+```
+
+where `score` is the average claim score for the `id`.
+
+### MedRAG Verifier
+
+The MedRAG verifier is memory-intensive due to the large size of the dataset. The data subset can be customized by overriding or editing
+the `verifier.MedRAGVerifier` class. **The dataset downloads to `MEDRAG_CORPUS` (if set) or `./corpus`.**
+
+Dataset size estimates:
+- `PubMed`: 238GB
+- `StatPearls`: 6.2GB
+- `textbooks`: 1.2GB
+- `Wikipedia`: 310GB
+
+Running verification with the full MedCorp dataset (with `MedRAGVerifier.cache=True`) requires roughly 300GB of RAM. The entire dataset takes up 646GB of disk.
+
+For speed, **we highly recommend setting `MedRAGVerifier.cache=True` for input files with a large number of claims (5K+).**
 
 ## Data
 
