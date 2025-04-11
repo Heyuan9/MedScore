@@ -207,7 +207,7 @@ The AskDocs dataset is in the ./data folder. It has 300 samples and 4 keys:
 -  `id`: question id
 -  `question`: user question
 -  `doctor_response`: a doctor response from a verified doctor for this question
--  `response`: the Llama3.1 chatbot response for this question, augmented from the doctor_response.
+-  `response`: the Llama3.1 chatbot response for this question, augmented from the doctor_response by explaining medical terminologies in detail and adding more empathetic sentences, without adding other diagnosis/treatment information.
 
 The AskDocs.demo dataset has 20 random samples from the AskDocs dataset. It is more cost-efficient to experiment on this small-scale dataset.
 
