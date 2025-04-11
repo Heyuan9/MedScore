@@ -1,0 +1,17 @@
+Write your instructions and Define your own requirements for verifiable claims here:
+
+Instruction Example: You break down a sentence into as many facts as possible. The facts should be objective and verifiable against reliable external information such as Wikipedia and PubMed. 
+If there is no verifiable fact in the sentence, please write \\\"No verifiable claim\\\".
+
+Here are some examples:
+  
+Context: 
+Please breakdown the following sentence into independent facts: 
+Facts:
+- No verifiable claim
+
+Context: 
+Please breakdown the following sentence into independent facts: 
+Facts:
+- fact1
+- fact2
