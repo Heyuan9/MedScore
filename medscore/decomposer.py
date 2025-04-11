@@ -13,9 +13,12 @@ import backoff
 import requests
 from openai import AsyncOpenAI
 from openai.types.chat.chat_completion import ChatCompletion
+import nest_asyncio
 
 from utils import process_claim, parse_sentences, chunker
-from prompts import MEDSCORE_PROMPT
+from prompts import MEDSCORE_PROMPT, FACTSCORE_PROMPT
+
+nest_asyncio.apply()
 
 
 class Decomposer(object):
@@ -23,7 +26,6 @@ class Decomposer(object):
             self,
             server_path: str,
             model_name: str,
-            system_prompt: str = MEDSCORE_PROMPT,
             random_state: int = 42,
             batch_size: int = 32
     ):
@@ -31,7 +33,7 @@ class Decomposer(object):
             base_url=server_path
         )
         self.model_name = model_name
-        self.system_prompt = system_prompt
+        self.system_prompt = self.get_prompt()
         self.random_state = random_state
         self.batch_size = batch_size
 
@@ -57,7 +59,7 @@ class Decomposer(object):
         # Async calls for batch_size items
         all_completions = []
         n_iter = len(messages) // self.batch_size
-        for batch in tqdm(chunker(messages, self.batch_size), desc="Decompose", total=n_iter):
+        for batch in tqdm(chunker(messages, self.batch_size), desc="Decompose", total=n_iter, ncols=0):
             completions = asyncio.run(self.batch_response(batch))
             all_completions.extend(completions)
 
@@ -66,12 +68,13 @@ class Decomposer(object):
         for d_input, completion in zip(decomp_input, all_completions):
             claim_list = completion.choices[0].message.content.split("\n")
             claim_list = process_claim(claim_list)
-            for claim in claim_list:
-                decomp = {k:v for k,v in d_input.items()}
+            for idx, claim in enumerate(claim_list):
+                decomp = {k:v for k,v in d_input.items() if k!="context"}
                 decomp["claim"] = claim
+                decomp["claim_id"] = idx
                 decompositions.append(decomp)
             if not claim_list:
-                decomp = {k:v for k,v in d_input.items()}
+                decomp = {k:v for k,v in d_input.items() if k!="context"}
                 decomp["claim"] = None
                 decompositions.append(decomp)
         return decompositions
@@ -91,5 +94,24 @@ class Decomposer(object):
         return await asyncio.gather(*async_responses)
 
     def format_input(self, context: str, sentence: str) -> str:
+        raise NotImplementedError
+
+    def get_prompt(self) -> str:
+        raise NotImplementedError()
+
+
+class MedScoreDecomposer(Decomposer):
+    def get_prompt(self) -> str:
+        return MEDSCORE_PROMPT
+
+    def format_input(self, context: str, sentence: str) -> str:
         return f"Context: {context}\nPlease breakdown the following sentence into independent facts: {sentence}\nFacts:\n"
+
+
+class FActScoreDecomposer(Decomposer):
+    def get_prompt(self) -> str:
+        return FACTSCORE_PROMPT
+
+    def format_input(self, context: str, sentence: str) -> str:
+        return f"Please breakdown the following sentence into independent facts: {sentence}"
 
