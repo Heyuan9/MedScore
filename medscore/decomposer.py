@@ -6,6 +6,7 @@ import os
 from functools import partial
 import asyncio
 from typing import List, Any, Optional, Dict
+import logging
 
 import jsonlines
 from tqdm import tqdm
@@ -18,6 +19,7 @@ import nest_asyncio
 from .utils import process_claim, parse_sentences, chunker
 from .prompts import MEDSCORE_PROMPT, FACTSCORE_PROMPT, DND_PROMPT
 
+logger = logging.getLogger(__name__)
 nest_asyncio.apply()
 
 
@@ -69,8 +71,12 @@ class Decomposer(object):
             all_completions.extend(completions)
 
         # Format claims
+        decompositions = self.format_completions(decomp_input, all_completions)
+        return decompositions
+
+    def format_completions(self, decomp_input: List[Dict[str, Any]], completions: List[ChatCompletion]) -> List[Dict[str, Any]]:
         decompositions = []
-        for d_input, completion in zip(decomp_input, all_completions):
+        for d_input, completion in zip(decomp_input, completions):
             claim_list = completion.choices[0].message.content.split("\n")
             claim_list = process_claim(claim_list)
             for idx, claim in enumerate(claim_list):
@@ -141,3 +147,28 @@ class DnDScoreDecomposer(Decomposer):
     def format_input(self, context: str, sentence: str) -> str:
         return DNDS_PROMPT.format(context=context, sentence=sentence)
 
+    def format_completions(self, decomp_input: List[Dict[str, Any]], completions: List[ChatCompletion]) -> List[Dict[str, Any]]:
+        decompositions = []
+        for d_input, completion in zip(decomp_input, completions):
+            model_output = completion.choices[0].message.content.strip()
+            explanation, subclaim_str = [x.strip() for x in model_output.split("##CONTEXT-SUBCLAIM PAIRS##:")]
+            subclaim_str = subclaim_str.replace('\n', '').strip()
+            subclaim_dict = ast.literal_eval(subclaim_str)
+
+            decomp = {k: v for k, v in d_input.items() if k != "context"}
+
+            # Error: malformed response
+            if subclaim_dict is None:
+                logger.warning(f"Invalid dictionary. Skipping {d['id']=} {d['sentence_id']=}: {subclaim_dict=}")
+                decomp["claim"] = None
+
+            for idx, claim_dict in enumerate(subclaim_dict):
+                decomp["claim"] = claim_dict["decontextualized"]
+                decomp["claim_id"] = idx
+                decomp["claim_meta"] = {
+                    "subclaim": claim_dict["subclaim"],
+                    "explanation": explanation
+                }
+
+            decompositions.append(decomp)
+        return decompositions

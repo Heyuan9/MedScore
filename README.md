@@ -56,6 +56,12 @@ python -m medscore.medscore --input_file ""
   - `output_dir`: Path to the output directory. The output files are `decompositions.jsonl`, `verifications.jsonl`, and `medscore_output.jsonl`.
     - Default: current directory
 - Decomposition-related settings
+  - `decomposition_mode`: Method for decomposing the sentences into claims.
+    - Options:
+      - `FActScore`: FActScore prompt from [FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation (Min et al., EMNLP 2023)](https://aclanthology.org/2023.emnlp-main.741/)
+      - `MedScore`: Our work.
+      - `DnDScore`: Prompt from [DnDScore: Decontextualization and Decomposition for Factuality Verification in Long-Form Text Generation (Wanner et al., arXiv 2024)](https://arxiv.org/abs/2412.13175)
+    - Default: `MedScore`
   - `model_name_decomposition`: The name of the model for decomposing the response into claims. It should the model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or locally-hosted vLLM model.
     - Default: `gpt-4o-mini`
   - `server_decomposition`: The server path for the decomposition model. 
