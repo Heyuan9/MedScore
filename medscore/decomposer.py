@@ -30,7 +30,9 @@ class Decomposer(object):
             server_path: str,
             model_name: str,
             random_state: int = 42,
-            batch_size: int = 32
+            batch_size: int = 32,
+            *args,
+            **kwargs
     ):
         self.client = AsyncOpenAI(
             base_url=server_path
@@ -115,6 +117,24 @@ class Decomposer(object):
 class MedScoreDecomposer(Decomposer):
     def get_prompt(self) -> str:
         return MEDSCORE_PROMPT
+
+    def format_input(self, context: str, sentence: str) -> str:
+        return f"Context: {context}\nPlease breakdown the following sentence into independent facts: {sentence}\nFacts:\n"
+
+
+class CustomDecomposer(Decomposer):
+    def __init__(
+        self,
+        prompt_path: str,
+        *args,
+        **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        with open(prompt_path) as f:
+            self.system_prompt = f.read().strip()
+
+    def get_prompt(self) -> str:
+        return self.system_prompt
 
     def format_input(self, context: str, sentence: str) -> str:
         return f"Context: {context}\nPlease breakdown the following sentence into independent facts: {sentence}\nFacts:\n"

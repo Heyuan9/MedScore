@@ -13,7 +13,7 @@ import jsonlines
 from tqdm import tqdm
 
 from .utils import parse_sentences
-from .decomposer import Decomposer, MedScoreDecomposer, FActScoreDecomposer, DnDScoreDecomposer
+from .decomposer import Decomposer, MedScoreDecomposer, FActScoreDecomposer, DnDScoreDecomposer, CustomDecomposer
 from .verifier import Verifier, InternalVerifier, MedRAGVerifier, ProvidedEvidenceVerifier
 
 FORMAT = '%(asctime)s %(message)s'
@@ -29,6 +29,8 @@ def decomposition_mode_to_decompser(mode: str) -> Decomposer:
         return FactScoreDecomposer
     if mode == "dndscore":
         return DnDScoreDecomposer
+    if mode == "custom":
+        return CustomDecomposer
     raise IllegalArgumentException(f"Unknown decomposition mode: {mode}")
 
 
@@ -53,13 +55,15 @@ class MedScore(object):
             verification_mode: str,
             decomposition_mode: str,
             response_key: str,
-            provided_evidence: Optional[Dict[str, str]] = None
+            provided_evidence: Optional[Dict[str, str]] = None,
+            custom_decomposition_prompt_path: Optional[str] = None,
     ):
         self.response_key = response_key
         decomp_class = decomposition_mode_to_decompser(decomposition_mode)
         self.decomposer = decomp_class(
             model_name=model_name_decomposition,
             server_path=server_decomposition,
+            prompt_path=custom_decomposition_prompt_path
         )
         verif_class = verification_mode_to_verifier(verification_mode)
         self.verifier = verif_class(
@@ -103,10 +107,11 @@ def parse_args():
     parser.add_argument("--input_file", required=True, type=str)
     parser.add_argument("--output_dir", default="", type=str)
     parser.add_argument("--response_key", type=str, default="response")
-    parser.add_argument("--decomposition_mode", type=str, choices=["medscore", "factscore", "dndscore", "custom"], default="medscore")
     # Decomposition
+    parser.add_argument("--decomposition_mode", type=str, choices=["medscore", "factscore", "dndscore", "custom"], default="medscore")
     parser.add_argument("--model_name_decomposition", type=str, default="gpt-4o-mini")
     parser.add_argument("--server_decomposition", type=str, default="https://api.openai.com/v1")
+    parser.add_argument("--decomp_prompt_path", type=str, default=None)
     # Verification
     parser.add_argument("--model_name_verification", type=str, default="gpt-4o-mini")
     parser.add_argument("--server_verification", type=str, default="https://api.openai.com/v1")
@@ -130,6 +135,9 @@ if __name__ == '__main__':
     else:
         provided_evidence = None
 
+    if args.decomposition_mode == "custom" and not args.decomp_prompt_path:
+        raise InvalidArgumentException("Must provide a decomposition prompt path with CustomDecomposer")
+
     # Initialize MedScore
     scorer = MedScore(
         model_name_decomposition=args.model_name_decomposition,
@@ -139,7 +147,8 @@ if __name__ == '__main__':
         verification_mode=args.verification_mode,
         decomposition_mode=args.decomposition_mode,
         response_key=args.response_key,
-        provided_evidence=provided_evidence
+        provided_evidence=provided_evidence,
+        custom_decomposition_prompt_path=args.decomp_prompt_path
     )
 
     # Load data
