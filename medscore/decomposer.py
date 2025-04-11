@@ -6,6 +6,7 @@ import os
 from functools import partial
 import asyncio
 from typing import List, Any, Optional, Dict
+import ast
 import logging
 
 import jsonlines
@@ -108,7 +109,7 @@ class Decomposer(object):
         raise NotImplementedError
 
     def get_prompt(self) -> Optional[str]:
-        raise None
+        return None
 
 
 class MedScoreDecomposer(Decomposer):
@@ -145,15 +146,16 @@ class DnDScoreDecomposer(Decomposer):
         )
 
     def format_input(self, context: str, sentence: str) -> str:
-        return DNDS_PROMPT.format(context=context, sentence=sentence)
+        return DND_PROMPT.replace("[paragraph]", context).replace("[sentence]", sentence)
 
     def format_completions(self, decomp_input: List[Dict[str, Any]], completions: List[ChatCompletion]) -> List[Dict[str, Any]]:
         decompositions = []
         for d_input, completion in zip(decomp_input, completions):
             model_output = completion.choices[0].message.content.strip()
-            explanation, subclaim_str = [x.strip() for x in model_output.split("##CONTEXT-SUBCLAIM PAIRS##:")]
+            extra, subclaim_str = [x.strip() for x in model_output.split("##CONTEXT-SUBCLAIM PAIRS##:")]
             subclaim_str = subclaim_str.replace('\n', '').strip()
             subclaim_dict = ast.literal_eval(subclaim_str)
+            explanation = extra.split("##EXPLANATION##:")[-1]
 
             decomp = {k: v for k, v in d_input.items() if k != "context"}
 

@@ -233,7 +233,7 @@ Example 2:
 ]
 
 Your task:
-##PARAGRAPH##: {context}
-##SENTENCE##: {sentence}
+##PARAGRAPH##: [paragraph]
+##SENTENCE##: [sentence]
 ##SUBCLAIMS##:"""
 

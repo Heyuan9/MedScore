@@ -28,7 +28,7 @@ def decomposition_mode_to_decompser(mode: str) -> Decomposer:
     if mode == "factscore":
         return FactScoreDecomposer
     if mode == "dndscore":
-        return DndScoreDecomposer
+        return DnDScoreDecomposer
     raise IllegalArgumentException(f"Unknown decomposition mode: {mode}")
 
 
@@ -103,7 +103,7 @@ def parse_args():
     parser.add_argument("--input_file", required=True, type=str)
     parser.add_argument("--output_dir", default="", type=str)
     parser.add_argument("--response_key", type=str, default="response")
-    parser.add_argument("--decomposition_mode", type=str, choices=["medscore", "factscore"], default="medscore")
+    parser.add_argument("--decomposition_mode", type=str, choices=["medscore", "factscore", "dndscore", "custom"], default="medscore")
     # Decomposition
     parser.add_argument("--model_name_decomposition", type=str, default="gpt-4o-mini")
     parser.add_argument("--server_decomposition", type=str, default="https://api.openai.com/v1")
@@ -146,23 +146,23 @@ if __name__ == '__main__':
     with jsonlines.open(args.input_file) as reader:
         dataset = [item for item in reader.iter()]
 
-    with jsonlines.open(os.path.join(args.output_dir, "decompositions.jsonl"), 'r') as reader:
-        decompositions = [item for item in reader.iter()]
+    # If pre-computed
+    # with jsonlines.open(os.path.join(args.output_dir, "decompositions.jsonl"), 'r') as reader:
+    #     decompositions = [item for item in reader.iter()]
+    # with jsonlines.open(os.path.join(args.output_dir, "verifications.jsonl"), 'r') as reader:
+    #     verifications = [item for item in reader.iter()]
 
-    # # Batch decompose. Save intermediate.
-    # decompositions = scorer.decompose(dataset)
-    # decomp_output_file = os.path.join(args.output_dir, "decompositions.jsonl")
-    # with jsonlines.open(decomp_output_file, 'w') as writer:
-    #     writer.write_all(decompositions)
+    # Batch decompose. Save intermediate.
+    decompositions = scorer.decompose(dataset)
+    decomp_output_file = os.path.join(args.output_dir, "decompositions.jsonl")
+    with jsonlines.open(decomp_output_file, 'w') as writer:
+        writer.write_all(decompositions)
 
     # Batch verify. Save intermediate.
     verifications = scorer.verify(decompositions)
     output_file = os.path.join(args.output_dir, "verifications.jsonl")
     with jsonlines.open(output_file, 'w') as writer:
         writer.write_all(verifications)
-
-    # with jsonlines.open(os.path.join(args.output_dir, "verifications.jsonl"), 'r') as reader:
-    #     verifications = [item for item in reader.iter()]
 
     # Combine
     combined_output = {

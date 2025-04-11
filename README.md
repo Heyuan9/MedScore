@@ -209,7 +209,7 @@ For speed, **we highly recommend setting `MedRAGVerifier.cache=True` for input f
 
 ## Data
 
-The AskDocs dataset is in the ./data folder. It has 300 samples and 4 keys:
+The AskDocs dataset is in the `./data` folder. It has 300 samples and 4 keys:
 -  `id`: question id
 -  `question`: user question
 -  `doctor_response`: a doctor response from a verified doctor for this question
