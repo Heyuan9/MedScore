@@ -10,6 +10,7 @@ from typing import List, Dict, Any, Tuple, Union
 import traceback
 import logging
 import subprocess
+import xml.etree.ElementTree as ET
 
 from sentence_transformers.models import Transformer, Pooling
 from sentence_transformers import SentenceTransformer
