@@ -1,7 +1,7 @@
 """MedRAG Retriever
 
 Use MedRAG corpus for retrieving relevant passages in the medical domain.
-Copied from MedRAG/src/utils.py.
+Copied from MedRAG/src/utils.py and MedRAG/src/data/statpearls.py.
 """
 import os
 import sys
@@ -40,111 +40,6 @@ retriever_names = {
     "RRF-4": ["bm25", "facebook/contriever", "allenai/specter", "ncbi/MedCPT-Query-Encoder"]
 }
 
-class MedRAGRetriever(object):
-    def __init__(
-        self,
-        retriever_name: str = "MedCPT",
-        corpus_name: str = "MEDIC",
-        db_dir: str = os.environ.get("MEDRAG_CORPUS", "./corpus"),
-        HNSW: bool = False,
-        cache: bool = False,
-        n_returned_docs: int = 5
-    ):
-        self.retriever = RetrievalSystem(
-            retriever_name=retriever_name,
-            corpus_name=corpus_name,
-            db_dir=db_dir,
-            HNSW=HNSW,
-            cache=cache)
-        self.use_cache = cache
-        self.n_returned_docs = n_returned_docs
-        self.db_dir = db_dir
-
-    def get_passages(self, query: str) -> List[Dict[str, Any]]:
-        """
-        Wrapper for RetrievalSystem.retrieve
-        :param topic: 
-        :param question: 
-        :param k: k is ignored. See n_returned_docs in class initialization.
-        :return: 
-        """
-        results = self(
-            query=[query],
-        )
-        retrieved = results[0]
-        return retrieved
-
-    def __call__(self, query: List[str]) -> List[List[Dict[str, Any]]]:
-        """Returns passages for multiple questions."""
-        logger.debug(f"In MedRAG")
-        batched_results = self.retriever.retrieve(
-            questions=query,
-            k=self.n_returned_docs,  # Final # of docs returned based on top scores
-            rrf_k=self.n_returned_docs * 5,  # # docs to return from each source
-            id_only=True
-        )
-        logger.debug(f"Done gathering results")
-        retrieved = self._format_retrieved(batched_results)
-        logger.debug(f"Done formatting")
-        return retrieved
-
-    def _format_retrieved(self, merge_results: List[Tuple[List[Dict[str, Any]], List[float]]]) -> List[List[Dict[str, Any]]]:
-        # Format into {'title': '', 'text': '', 'score': }
-        retrieved = []
-        for t_batch, s_batch in tqdm.tqdm(merge_results, desc="Formatting retrieved documents", ncols=0):
-            ret = []
-            for t, s in zip(t_batch, s_batch):
-                if not t.get("title"):
-                    t.update(self._load_doc_from_id(t["id"]))
-                r = {
-                    "id": t["id"],
-                    "title": t["title"],
-                    "text": t["content"],
-                    "score": s
-                }
-                ret.append(r)
-            retrieved.append(ret)
-        return retrieved
-
-    def _load_doc_from_id(self, id: str) -> Dict[str, Any]:
-        if self.use_cache:
-            doc = self.retriever.docExt.extract([id])[0]
-        else:
-            # Hacky way to load the document
-            # Format example: pubmed23n0973_8682
-            # TODO: use DocExtractor system self.dict which has id2path?
-            id_parts = id.split("_")
-            if len(id_parts) > 2:
-                index = int(id_parts[-1])
-                doc_id = "_".join(id_parts[:-1])
-            else:
-                doc_id, index = id_parts
-                index = int(index)
-
-            if "pubmed" in doc_id:
-                corpus_name = "pubmed"
-            elif "article-" in doc_id:
-                corpus_name = "statpearls"
-            elif "wiki" in doc_id:
-                corpus_name = "wikipedia"
-            else:
-                corpus_name = "textbooks"
-
-            doc_path = os.path.join(self.db_dir, corpus_name, "chunk", f"{doc_id}.jsonl")
-
-            # https://stackoverflow.com/questions/6022384/bash-tool-to-get-nth-line-from-a-file
-            doc = subprocess.check_output([
-                "sed",
-                f"{index+1}q;d",  # sed is not 0-based
-                doc_path
-            ])
-            doc = json.loads(doc)
-        return doc
-
-
-#####################
-# Copied from MedRAG
-#####################
 
 def ends_with_ending_punctuation(s):
     ending_punctuation = ('.', '?', '!')
@@ -280,7 +175,7 @@ class Retriever:
                     os.path.join(db_dir, self.corpus_name, "statpearls_NBK430685.tar.gz"),
                     os.path.join(self.db_dir, self.corpus_name)))
                 print("Chunking the statpearls corpus...")
-                os.system(f"python {os.environ['MEDIC']}/dependencies/MedRAG/src/data/statpearls.py --data-dir {self.db_dir}")
+                download_statpearls(self.db_dir)
         self.index_dir = os.path.join(self.db_dir, self.corpus_name, "index",
                                       self.retriever_name.replace("Query-Encoder", "Article-Encoder"))
         if "bm25" in self.retriever_name.lower():
@@ -614,24 +509,97 @@ class DocExtracter:
                     open(os.path.join(self.db_dir, item["fpath"])).read().strip().split('\n')[item["index"]]))
         return output
 
+##############
+# Copied from MedRAG/src/data/statpearls.py
+##############
+def download_statpearls(data_dir):
+    fnames = sorted([fname for fname in os.listdir(f"{data_dir}/statpearls/statpearls_NBK430685") if fname.endswith("nxml")])
+    if not os.path.exists(f"{data_dir}/statpearls/chunk"):
+        os.makedirs(f"{data_dir}/statpearls/chunk")
+    for fname in tqdm.tqdm(fnames):
+        fpath = os.path.join(f"{data_dir}/statpearls/statpearls_NBK430685", fname)
+        saved_text = extract(fpath)
+        if len(saved_text) > 0:
+            with open("{}/statpearls/chunk/{:s}".format(data_dir, fname.replace(".nxml", ".jsonl")), 'w') as f:
+                f.write('\n'.join(saved_text))
 
-if __name__ == "__main__":
-    logger.setLevel(logging.DEBUG)
-    retriever = MedRAGRetriever(
-        corpus_name="MedCorp",
-        db_dir=f"{os.environ['MEDIC']}/data/MedCorp",
-        n_returned_docs=5,
-        cache=True
-    )
 
-    questions = ["How many advil can I take in a day?", "What are the symptoms of flu?"]
-    topics = ["tester"] * len(questions)
+def extract_text(element):
+    text = (element.text or "").strip()
 
-    # Make sure single retrieval works
-    out = retriever.get_passages(question=questions[0], topic=topics[0], k=10)
-    print(out)
+    for child in element:
+        text += (" " if len(text) else "") + extract_text(child)
+        if child.tail and len(child.tail.strip()) > 0:
+            text += (" " if len(text) else "") + child.tail.strip()
+    return text.strip()
 
-    # Test batching
-    out = retriever.get_passages_batched(questions=questions, topics=topics, k=100)
-    print(out)
+def is_subtitle(element):
+    if element.tag != 'p':
+        return False
+    if len(list(element)) != 1:
+        return False
+    if list(element)[0].tag != 'bold':
+        return False
+    if list(element)[0].tail and len(list(element)[0].tail.strip()) > 0:
+        return False
+    return True
+
+def extract(fpath):
+    fname = fpath.split("/")[-1].replace(".nxml", "")
+    tree = ET.parse(fpath)
+    title = tree.getroot().find(".//title").text
+    sections = tree.getroot().findall(".//sec")
+    saved_text = []
+    j = 0
+    last_text = None
+    for sec in sections:
+        sec_title = sec.find('./title').text.strip()
+        sub_title = ""
+        prefix = " -- ".join([title, sec_title])
+        last_text = None
+        last_json = None
+        last_node = None
+        for ch in sec:
+            if is_subtitle(ch):
+                last_text = None
+                last_json = None
+                sub_title = extract_text(ch)
+                prefix = " -- ".join(prefix.split(" -- ")[:2] + [sub_title])
+            elif ch.tag == 'p':
+                curr_text = extract_text(ch)
+                if len(curr_text) < 200 and last_text is not None and len(last_text + curr_text) < 1000:
+                    last_text = " ".join([last_json['content'], curr_text])
+                    last_json = {"id": last_json['id'], "title": last_json['title'], "content": last_text}
+                    last_json["contents"] = concat(last_json["title"], last_json["content"])
+                    saved_text[-1] = json.dumps(last_json)
+                else:
+                    last_text = curr_text
+                    last_json = {"id": '_'.join([fname, str(j)]), "title": prefix, "content": curr_text}
+                    last_json["contents"] = concat(last_json["title"], last_json["content"])
+                    saved_text.append(json.dumps(last_json))
+                    j += 1
+            elif ch.tag == 'list':
+                list_text = [extract_text(c) for c in ch]
+                if last_text is not None and len(" ".join(list_text) + last_text) < 1000:
+                    last_text = " ".join([last_json["content"]] + list_text)
+                    last_json = {"id": last_json['id'], "title": last_json['title'], "content": last_text}
+                    last_json["contents"] = concat(last_json["title"], last_json["content"])
+                    saved_text[-1] = json.dumps(last_json)
+                elif len(" ".join(list_text)) < 1000:
+                    last_text = " ".join(list_text)
+                    last_json = {"id": '_'.join([fname, str(j)]), "title": prefix, "content": last_text}
+                    last_json["contents"] = concat(last_json["title"], last_json["content"])
+                    saved_text.append(json.dumps(last_json))
+                    j += 1
+                else:
+                    last_text = None
+                    last_json = None
+                    for c in list_text:
+                        saved_text.append(json.dumps({"id": '_'.join([fname, str(j)]), "title": prefix, "content": c, "contents": concat(prefix, c)}))
+                        j += 1
+                if last_node is not None and is_subtitle(last_node):
+                    sub_title = ""
+                    prefix = " -- ".join([title, sec_title])
+            last_node = ch
+    return saved_text
 

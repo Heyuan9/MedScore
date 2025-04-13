@@ -16,7 +16,7 @@ import nest_asyncio
 
 from .utils import chunker
 from .prompts import INTERNAL_KNOWLEDGE_PROMPT
-from .medrag_retriever import MedRAGRetriever
+from .retriever import MedRAGRetriever
 
 nest_asyncio.apply()
 
