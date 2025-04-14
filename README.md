@@ -61,7 +61,7 @@ python -m medscore.medscore --input_file ""
       - `factscore`: FActScore prompt from [FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation (Min et al., EMNLP 2023)](https://aclanthology.org/2023.emnlp-main.741/)
       - `medscore`: Our work.
       - `dndscore`: Prompt from [DnDScore: Decontextualization and Decomposition for Factuality Verification in Long-Form Text Generation (Wanner et al., arXiv 2024)](https://arxiv.org/abs/2412.13175)
-      - `custom`: A custom user-written prompt with examples best for your dataset. The `decomp_prompt_path` must also be provided.
+      - `custom`: A custom user-written prompt with instructions and in-domain examples best for your dataset. The `decomp_prompt_path` must also be provided. We recommend following the format of MedScore_prompt.txt to make the first customization try easier.
     - Default: `MedScore`
   - `decomp_prompt_path`: Path to a `txt` file containing a system prompt for decomposition. See the prompts in `medscore/prompts.py` for examples.
   - `model_name_decomposition`: The name of the model for decomposing the response into claims. It should the model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or locally-hosted vLLM model.
