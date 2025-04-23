@@ -3,6 +3,11 @@
 #############
 demo
 
+# results folder
+result
+/result
+result/
+/result/
 
 #############
 # Python

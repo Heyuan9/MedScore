@@ -5,6 +5,7 @@ from functools import partial
 import asyncio
 from pyexpat.errors import messages
 from typing import List, Dict, Any, Optional
+import string
 
 import jsonlines
 from tqdm import tqdm
@@ -31,7 +32,7 @@ class Verifier(object):
             **kwargs,  # Ignore options passed that do not matter to this class
     ):
         self.client = AsyncOpenAI(
-            base_url=server_path
+            base_url=server_path,
         )
         self.model_name = model_name
         self.random_state = random_state
@@ -93,8 +94,11 @@ class Verifier(object):
             elif "false" in generated_answer and "true" not in generated_answer:
                 is_supported = 0.0
             else:
-                # I feel this is random tie breaking
-                is_supported = generated_answer.index("true") > generated_answer.index("false")
+                # Below logic is wrong: it gets the first occurrence of "true" and "false", and if the first true is later than the first false, it is considered true.
+                #is_supported = generated_answer.index("true") > generated_answer.index("false")
+
+                # If the last occurrence of 'true' appears later than 'false' in the output, then think the conclusion is true.
+                is_supported = generated_answer.rindex("true") > generated_answer.rindex("false")
                 is_supported = 1.0 if is_supported else 0.0
         else:
             generated_answer = generated_answer.translate(str.maketrans("", "", string.punctuation)).split()
@@ -171,7 +175,8 @@ class MedRAGVerifier(Verifier):
     def __init__(
         self,
         retriever_name: str = "MedCPT",
-        corpus_name: str = "MEDIC",
+        # corpus_name: str = "MEDIC",
+        corpus_name: str = "StatPearls",
         db_dir: str = os.environ.get("MEDRAG_CORPUS", "./corpus"),
         HNSW: bool = False,
         cache: bool = False,
