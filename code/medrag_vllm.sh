@@ -13,9 +13,9 @@ conda activate medic
 cd /home/hhuan134/scr4_mdredze1/hhuan134/MedScore
 ### GPT-4o internal
 # python -m medscore.medscore --input_file "/home/hhuan134/scr4_mdredze1/hhuan134/MedScore/result/PUMA_gpt4o/decompositions.jsonl" --output_dir "/home/hhuan134/scr4_mdredze1/hhuan134/MedScore/result/PUMA_gpt4o" --verify_only --verification_mode "internal" --model_name_verification "gpt-4o"
-export HF_TOKEN="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"
+
 ## BioLLM70B internal
-python -m medscore.medscore --input_file "/home/hhuan134/scr4_mdredze1/hhuan134/MedScore/result/AskDocs_VeriScore_OpenBioLLM_internal/decompositions.jsonl" --output_dir "/home/hhuan134/scr4_mdredze1/hhuan134/MedScore/result/AskDocs_VeriScore_OpenBioLLM_internal" --verify_only --verification_mode "internal" --model_name_verification "aaditya/Llama3-OpenBioLLM-70B" --server_verification "https://router.huggingface.co/nebius/v1"
+python -m medscore.medscore --input_file "/home/hhuan134/scr4_mdredze1/hhuan134/MedScore/result/AskDocs_MedScore_OpenBioLLM/decompositions.jsonl" --output_dir "/home/hhuan134/scr4_mdredze1/hhuan134/MedScore/result/AskDocs_MedScore_OpenBioLLM" --verify_only --verification_mode "internal" --model_name_verification "aaditya/Llama3-OpenBioLLM-70B" --server_verification "https://router.huggingface.co/nebius/v1"
 # python -m medscore.medscore --input_file "/home/hhuan134/scr4_mdredze1/hhuan134/MedScore/result/AskDocs_VeriScore_OpenBioLLM/decompositions.jsonl" --output_dir "/home/hhuan134/scr4_mdredze1/hhuan134/MedScore/result/AskDocs_VeriScore_OpenBioLLM" --verify_only --verification_mode "internal" --model_name_verification "aaditya/Llama3-OpenBioLLM-70B" --server_verification "http://icgpu02:22659/v1"
 
 
