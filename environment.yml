@@ -1,4 +1,4 @@
-name: medic
+name: medscore
 channels:
   - pytorch
   - nvidia
