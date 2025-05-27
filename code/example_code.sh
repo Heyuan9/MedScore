@@ -1,8 +1,8 @@
 #!/bin/bash
-### Put your bash setting script here
+### Put your bash setting script here if needed
 
 module load anaconda
-### Create MedScore environment
+### Create MedScore environment and activate it before running the main code.
 conda activate medscore
 
 cd ./MedScore
