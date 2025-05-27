@@ -1,16 +1,19 @@
 # MedScore
 
 Supporting code and data for MedScore, a medical chatbot factuality detection system.
-See [the paper]() for details.
+See [the MedScore paper](https://arxiv.org/abs/2505.18452) for details.
 
 If you use this tool, please cite
 
 ```
-@article{
-    title={"MedScore:"},
-    author={},
-    journal={arXiv preprint arXiv: },
-    year={2025}
+@misc{huang2025medscorefactualityevaluationfreeform,
+      title={MedScore: Factuality Evaluation of Free-Form Medical Answers}, 
+      author={Heyuan Huang and Alexandra DeLucia and Vijay Murari Tiyyala and Mark Dredze},
+      year={2025},
+      eprint={2505.18452},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2505.18452}, 
 }
 ```
 
