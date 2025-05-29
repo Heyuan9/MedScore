@@ -1,7 +1,7 @@
 # MedScore
 
 Supporting code and data for MedScore, a medical chatbot factuality evaluation system that can adapt to other domains easily.
-See [the MedScore paper](https://arxiv.org/abs/2505.18452) for details. Following the structure of the paper (synthesize similar taxonomy, then change the MedScore Instructions and domain-specific In Context Learning examples), researchers can adapt this tool to their text domain optimally with minimal effort.
+See [the MedScore paper](https://arxiv.org/abs/2505.18452) for details. Following the structure of the paper (update MedScore taxonomy based on domain-specific requirements for valid claim definition, then change the MedScore Instructions and domain-specific In Context Learning examples), researchers can adapt this tool to their text domain optimally with minimal effort.
 
 If you use this tool, please cite
 
