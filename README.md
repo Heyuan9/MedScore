@@ -49,7 +49,6 @@ MedScore can be run from the command line. The options are explained below.
 
 ```bash
 python -m medscore.medscore --input_file "Your datafile.jsonl" --response_key "key of the paragraph to be evaluated" --output_dir "path to result folder" --decomposition_mode "medscore" --model_name_decomposition gpt-4o-mini --model_name_verification "gpt-4o" --verification_mode "internal" --server_decomposition "https://api.openai.com/v1" --server_verification "https://api.openai.com/v1" 
- ""
 ```
 
 - General settings
