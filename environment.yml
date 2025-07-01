@@ -7,13 +7,15 @@ dependencies:
   - pip
   - python=3.12.7
   - pip:
-    - faiss-cpu==1.9.0
-    - huggingface-hub==0.29.3
-    - numpy==2.2.4
-    - openai==1.52.0
-    - overrides
-    - pandas
-    - pydantic==2.10.6
-    - regex
-    - requests==2.32.3
-    - spacy==3.8.4  # original paper uses 3.7.4
+      - jsonlines
+      - faiss-cpu==1.9.0
+      - huggingface-hub==0.29.3
+      - numpy==2.2.4
+      - openai==1.52.0
+      - overrides
+      - pandas
+      - pydantic==2.10.6
+      - regex
+      - requests==2.32.3
+      - tqdm
+      - spacy==3.8.4  # original paper uses 3.7.4
