@@ -7,7 +7,7 @@ dependencies:
   - pip
   - python=3.12.7
   - pip:
-      - jsonlines
+      - jsonlines==4.0.0
       - faiss-cpu==1.9.0
       - huggingface-hub==0.29.3
       - numpy==2.2.4
@@ -18,4 +18,5 @@ dependencies:
       - regex
       - requests==2.32.3
       - tqdm
+      - backoff
       - spacy==3.8.4  # original paper uses 3.7.4
