@@ -54,7 +54,9 @@ class MedScore(object):
             server_verification: str,
             verification_mode: str,
             decomposition_mode: str,
-            response_key: str,
+            response_key: str = "response",
+            server_decomposition_key: str = "",
+            server_verification_key: str = "",
             provided_evidence: Optional[Dict[str, str]] = None,
             custom_decomposition_prompt_path: Optional[str] = None,
     ):
@@ -63,13 +65,15 @@ class MedScore(object):
         self.decomposer = decomp_class(
             model_name=model_name_decomposition,
             server_path=server_decomposition,
-            prompt_path=custom_decomposition_prompt_path
+            prompt_path=custom_decomposition_prompt_path,
+            api_key=server_decomposition_key
         )
         verif_class = verification_mode_to_verifier(verification_mode)
         self.verifier = verif_class(
             model_name=model_name_verification,
             server_path=server_verification,
             id_to_evidence=provided_evidence,
+            api_key=server_verification_key
         )
 
     def decompose(
@@ -113,10 +117,12 @@ def parse_args():
     parser.add_argument("--decomposition_mode", type=str, choices=["medscore", "factscore", "dndscore", "custom"], default="medscore")
     parser.add_argument("--model_name_decomposition", type=str, default="gpt-4o-mini")
     parser.add_argument("--server_decomposition", type=str, default="https://api.openai.com/v1")
+    parser.add_argument("--server_decomposition_key", type=str, default=os.environ.get("OPENAI_API_KEY", ""), help="API key for Decomposition server. Defaults to OpenAI key in environment.")
     parser.add_argument("--decomp_prompt_path", type=str, default=None)
     # Verification
     parser.add_argument("--model_name_verification", type=str, default="gpt-4o-mini")
     parser.add_argument("--server_verification", type=str, default="https://api.openai.com/v1")
+    parser.add_argument("--server_verification_key", type=str, default=os.environ.get("OPENAI_API_KEY", ""), help="API key for Verification server. Defaults to OpenAI key in environment.")
     parser.add_argument("--verification_mode", type=str, choices=["internal", "medrag", "provided"], default="internal")
     parser.add_argument("--provided_evidence_path", type=str, default=None)
     return parser.parse_args()
@@ -144,8 +150,10 @@ if __name__ == '__main__':
     scorer = MedScore(
         model_name_decomposition=args.model_name_decomposition,
         server_decomposition=args.server_decomposition,
+        server_decomposition_key=args.server_decomposition_key,
         model_name_verification=args.model_name_verification,
         server_verification=args.server_verification,
+        server_verification_key=args.server_verification_key,
         verification_mode=args.verification_mode,
         decomposition_mode=args.decomposition_mode,
         response_key=args.response_key,

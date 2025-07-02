@@ -27,12 +27,14 @@ class Verifier(object):
             self,
             server_path: str,
             model_name: str,
+            api_key: str,
             random_state: int = 42,
             batch_size: int = 32,
             **kwargs,  # Ignore options passed that do not matter to this class
     ):
         self.client = AsyncOpenAI(
             base_url=server_path,
+            api_key=api_key,
         )
         self.model_name = model_name
         self.random_state = random_state

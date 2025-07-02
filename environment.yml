@@ -11,7 +11,7 @@ dependencies:
       - faiss-cpu==1.9.0
       - huggingface-hub==0.29.3
       - numpy==2.2.4
-      - openai==1.52.0
+      - openai==1.93.0
       - overrides
       - pandas
       - pydantic==2.10.6
