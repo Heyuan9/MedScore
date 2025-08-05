@@ -19,22 +19,35 @@ If you use this tool, please cite
 
 ## Installation and Setup
 
-1. Make a new Python 3.10+ environment with `conda` with the `environment.yml` file.
+1. Clone the repository
 
-    ```bash
-    conda env create --file=environment.yml
-    conda activate medscore
-    python -m spacy download en_core_web_sm
-    ```
+```bash
+git clone git@github.com:Heyuan9/MedScore.git
+```
 
-2. Add any API keys to your `~/.bashrc`
+1. [Optional] Create a new environment
+
+```bash
+conda env create --file=environment.yml
+conda activate medscore
+python -m spacy download en_core_web_sm
+```
+
+1. [Optional] Install the MedScore package for easy command-line usage
+
+  ```bash
+  cd /path/to/MedScore
+  pip install .
+  ```
+
+1. Add any API keys to your `~/.bashrc`
 
     ```bash
    export OPENAI_API_KEY=""
    export TOGETHER_API_KEY=""
     ```
 
-3. [Optional] Set `MEDRAG_CORPUS` environment variable.
+1. [Optional] Set `MEDRAG_CORPUS` environment variable.
 
     ```bash
    export MEDRAG_CORPUS=""
@@ -45,65 +58,126 @@ Setting this variable makes sure that the MedRAG corpus will only be downloaded 
 
 ## Running MedScore
 
-MedScore can be run from the command line. The options are explained below.
+MedScore v0.1.1 is now run from the command line using a single configuration file, which makes managing experiments much easier.
 
 ```bash
-python -m medscore.medscore --input_file "Your datafile.jsonl" --response_key "key of the paragraph to be evaluated" --output_dir "path to result folder" --decomposition_mode "medscore" --model_name_decomposition "gpt-4o-mini" --model_name_verification "gpt-4o" --verification_mode "internal" --server_decomposition "https://api.openai.com/v1" --server_verification "https://api.openai.com/v1" 
+python -m medscore.medscore --config /path/to/your/config.yaml
 ```
 
-- General settings
-  - `input_file`: Path to the input data file. It should be in `jsonl` format.
-    - `id`: A unique identifier for the instance.
-    - `repsonse`: The text response from the medical chatbot. This key can be changed with `--response_key`.
-    - Any other metadata.
-  - `output_dir`: Path to the output directory. The output files are `decompositions.jsonl`, `verifications.jsonl`, and `medscore_output.jsonl`.
-    - Default: current directory
-- Decomposition-related settings
-  - `decomposition_mode`: Method for decomposing the sentences into claims.
+All settings are defined within the YAML configuration file. You can create different config files for different experiments.
+
+### The Configuration File (config.yaml)
+Below are explanations for all the options in a MedScore config file. There are examples in `demo/` and a few are below.
+
+#### Config.yaml setup
+
+There are three main sections of a MedScore config file.
+
+**1. Main input/output**
+   - `input_file`: Path to the input data file. It should be in `jsonl` format.
+       - `id`: A unique identifier for the instance.
+       - `repsonse`: The text response from the medical chatbot. This key can be changed with `--response_key`.
+       - Any other metadata.
+   - `output_dir`: Path to the output directory. The output files are `decompositions.jsonl`, `verifications.jsonl`, and `medscore_output.jsonl`.
+     - Default: current directory
+   - `response_key`: JSON key corresponding to the medical chatbot response. The default is `response`.
+
+
+**2. Decomposition-related arguments**
+  - `type`: Method for decomposing the sentences into claims.
     - Options:
       - `factscore`: FActScore prompt from [FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation (Min et al., EMNLP 2023)](https://aclanthology.org/2023.emnlp-main.741/)
       - `medscore`: Our work.
       - `dndscore`: Prompt from [DnDScore: Decontextualization and Decomposition for Factuality Verification in Long-Form Text Generation (Wanner et al., arXiv 2024)](https://arxiv.org/abs/2412.13175)
       - `custom`: A custom user-written prompt with instructions and in-domain examples best for your dataset. The `decomp_prompt_path` must also be provided. We recommend following the format of MedScore_prompt.txt to make the first customization try easier.
     - Default: `MedScore`
-  - `decomp_prompt_path`: Path to a `txt` file containing a system prompt for decomposition. See the prompts in `medscore/prompts.py` for examples.
-  - `model_name_decomposition`: The name of the model for decomposing the response into claims. It should the model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or locally-hosted vLLM model.
+  - `prompt_path`: Path to a `txt` file containing a system prompt for decomposition. See the prompts in `medscore/prompts.py` for examples. **This should only be set if you are using a custom decomposer**.
+  - `model_name`: The name of the model for decomposing the response into claims. It should the model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or locally-hosted vLLM model.
     - Default: `gpt-4o-mini`
-  - `server_decomposition`: The server path for the decomposition model. 
+  - `server_path`: The server path for the decomposition model. 
     - Default: `https://api.openai.com/v1`
-  - `response_key`: The `jsonl` key corresponding to the text for decomposition.
-    - Default: `response`.
-- Verification-related settings
-  - `model_name_verification`: The name of the model for decomposing the response into claims. It should the model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or locally-hosted vLLM model.
-    - Default: `gpt-4o-mini`
-  - `verification_mode`: The method for verification.
+  - `api_key`: 
+
+
+**3. Verification-related arguments**
+  - `type`: The method for verification.
     - Options:
       - `medrag`: Verify the `response` against MedCorp from [Benchmarking Retrieval-Augmented Generation for Medicine (Xiong et al., Findings 2024)](https://aclanthology.org/2024.findings-acl.372/). The default settings retrieve the top 5 passages from PubMed, StatPearls, and academic textbooks with the `MedCPT` encoder.
       - `internal`: Verify against the internal knowledge of an LLM. 
       - `provided`: Verify against pre-collected user-provided evidence. Requires `provided_evidence_path` to be set.
     - Default: `internal`
-  - `server_verification`: The server path for the verification model. 
+  - `response_key`: JSON key corresponding to the medical chatbot response. The default is `response`.
+  - `prompt_path`: Path to a `txt` file containing a system prompt for decomposition. See the prompts in `medscore/prompts.py` for examples. **This should only be set if you are using a custom decomposer**.
+  - `model_name`: The name of the model for verifying the response. It should be a model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or a locally-hosted vLLM model.
+    - Default: `gpt-4o`
+  - `server_path`: The server path for the decomposition model. 
     - Default: `https://api.openai.com/v1`
+  - `api_key`: 
   - `provided_evidence_path`: Path to `json` file in `{"{id}": "{evidence}"}` format, where the `id` is the same as the entry id in `input_file`.
 
 
-Example settings for decomposing and verifying with `GPT4o`:
+All of the decomposition and verification arguments are built from the classes in `medscore.decomposer` and `medscore.verifier`, respectively.
 
-```bash
---model_name_decomposition gpt-4o \
---model_name_verification gpt-4o \
---verification_mode internal \
---server_decomposition "https://api.openai.com/v1" \
---server_verification "https://api.openai.com" \
+
+#### Config.yaml Examples
+
+**1. MedScore Decomposer with Internal Verification**
+
+```yaml
+#################
+# MedScore Configuration File
+#################
+
+# --- Main Input/Output Files ---
+# These paths are relative to where you run the script.
+input_file: "data/AskDocs.demo.jsonl"
+output_dir: "results"
+response_key: "response"
+
+# --- Decomposition Configuration ---
+decomposer:
+  type: "medscore"
+  model_name: "gpt-4o-mini"
+  server_path: "https://api.openai.com/v1"
+  # api_key: "YOUR_API_KEY" # Optional: can be set here or via environment variable.
+
+# --- Verification Configuration ---
+verifier:
+  type: "internal"
+  model_name: "gpt-4o"
+  server_path: "https://api.openai.com/v1"
 ```
 
-Example settings for decomposing with GPT4o and verifying with MedRag against a locally-hosted Mistral Small 3 model:
-```bash
---model_name_decomposition gpt-4o \
---model_name_verification "mistralai/Mistral-Small-24B-Instruct-2501" \
---verification_mode medrag \
---server_decomposition "https://api.openai.com/v1" \
---server_verification "http://localhost:8000" \
+
+**1. MedScore Decomposer with MedRAG Verification and locally-hosted model**
+
+```yaml
+#################
+# MedScore Configuration File
+#################
+
+# --- Main Input/Output Files ---
+# These paths are relative to where you run the script.
+input_file: "data/AskDocs.demo.jsonl"
+output_dir: "results"
+response_key: "response"
+
+# --- Decomposition Configuration ---
+decomposer:
+  type: "medscore"
+  model_name: "gpt-4o-mini"
+  server_path: "https://api.openai.com/v1"
+  # api_key: "YOUR_API_KEY" # Optional: can be set here or via environment variable.
+
+# --- Verification Configuration ---
+verifier:
+  type: "medrag"
+  model_name: "mistralai/Mistral-Small-24B-Instruct-2501"
+  server_path: "http://localhost:8000"
+  corpus_name: "Textbooks"  # "PubMed", "Textbooks", "StatPearls", "Wikipedia", "MedCorp", "MEDIC"
+  n_returned_docs: 5
+  cache: false  # Set to true for large datasets to improve performance
+  db_dir: "."
 ```
 
 ### Program output

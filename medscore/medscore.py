@@ -1,88 +1,49 @@
 """
-Extract and verify claims with MedScore
+Main script to extract and verify claims with MedScore.
 """
-
 import os
 import sys
 import logging
 import json
-from typing import List, Any, Optional, Dict
+import yaml
+from typing import List, Any, Dict
 from argparse import ArgumentParser
 
 import jsonlines
-from tqdm import tqdm
+from pydantic import ValidationError
 
 from .utils import parse_sentences
-from .decomposer import Decomposer, MedScoreDecomposer, FActScoreDecomposer, DnDScoreDecomposer, CustomDecomposer
-from .verifier import Verifier, InternalVerifier, MedRAGVerifier, ProvidedEvidenceVerifier
+from .config_schema import MedScoreConfig, ProvidedEvidenceVerifierConfig
+from .registry import build_component
 
-FORMAT = '%(asctime)s %(message)s'
-logging.basicConfig(level=logging.WARNING, format=FORMAT)
+# --- Setup Logging ---
+FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
-def decomposition_mode_to_decompser(mode: str) -> Decomposer:
-    mode = mode.lower()
-    if mode == "medscore":
-        return MedScoreDecomposer
-    if mode == "factscore":
-        return FactScoreDecomposer
-    if mode == "dndscore":
-        return DnDScoreDecomposer
-    if mode == "custom":
-        return CustomDecomposer
-    raise IllegalArgumentException(f"Unknown decomposition mode: {mode}")
+class MedScore:
+    """The main MedScore pipeline class."""
+    def __init__(self, config: MedScoreConfig):
+        """
+        Initializes the MedScore pipeline from a validated Pydantic config object.
+        """
+        # Build the decomposer and verifier from the config using the registry
+        logger.info(f"Building decomposer of type: {config.decomposer.type}")
+        self.decomposer = build_component(config.decomposer, "decomposer")
 
+        logger.info(f"Building verifier of type: {config.verifier.type}")
+        self.verifier = build_component(config.verifier, "verifier")
 
-def verification_mode_to_verifier(mode: str) -> Verifier:
-    mode = mode.lower()
-    if mode == "internal":
-        return InternalVerifier
-    if mode == "provided":
-        return ProvidedEvidenceVerifier
-    if mode == "medrag":
-        return MedRAGVerifier
-    raise IllegalArgumentException(f"Unknown verification mode: {mode}")
+        self.response_key = config.response_key
 
-
-class MedScore(object):
-    def __init__(
-            self,
-            model_name_decomposition: str,
-            server_decomposition: str,
-            model_name_verification: str,
-            server_verification: str,
-            verification_mode: str,
-            decomposition_mode: str,
-            response_key: str = "response",
-            server_decomposition_key: str = "",
-            server_verification_key: str = "",
-            provided_evidence: Optional[Dict[str, str]] = None,
-            custom_decomposition_prompt_path: Optional[str] = None,
-    ):
-        self.response_key = response_key
-        decomp_class = decomposition_mode_to_decompser(decomposition_mode)
-        self.decomposer = decomp_class(
-            model_name=model_name_decomposition,
-            server_path=server_decomposition,
-            prompt_path=custom_decomposition_prompt_path,
-            api_key=server_decomposition_key
-        )
-        verif_class = verification_mode_to_verifier(verification_mode)
-        self.verifier = verif_class(
-            model_name=model_name_verification,
-            server_path=server_verification,
-            id_to_evidence=provided_evidence,
-            api_key=server_verification_key
-        )
-
-    def decompose(
-        self,
-        dataset: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
-        # Split each response
+    def decompose(self, dataset: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Decomposes responses from a dataset into individual claims."""
         decomposer_input = []
         for item in dataset:
+            if self.response_key not in item:
+                logger.warning(f"ID '{item.get('id')}' missing response_key '{self.response_key}'. Skipping.")
+                continue
             sentences = parse_sentences(item[self.response_key])
             for idx, sentence in enumerate(sentences):
                 decomposer_input.append({
@@ -92,124 +53,123 @@ class MedScore(object):
                     "sentence": sentence["text"].strip(),
                 })
 
-        # Decompose
+        if not decomposer_input:
+            logger.error("No valid inputs found for the decomposer.")
+            return []
+
         decompositions = self.decomposer(decomposer_input)
         return decompositions
 
     def verify(self, decompositions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        non_empty_decompositions = [d for d in decompositions if d["claim"] is not None]
+        """Verifies a list of decomposed claims."""
+        non_empty_decompositions = [d for d in decompositions if d.get("claim") is not None]
+        if not non_empty_decompositions:
+            logger.warning("No valid claims to verify.")
+            return []
+
         verifier_output = self.verifier(non_empty_decompositions)
         return verifier_output
 
 
-#############
-# Main
-#############
-def parse_args():
-    parser = ArgumentParser()
-    # General
-    parser.add_argument("--input_file", required=True, type=str)
-    parser.add_argument("--output_dir", default="", type=str)
-    parser.add_argument("--response_key", type=str, default="response")
-    parser.add_argument("--decompose_only", action="store_true")
-    parser.add_argument("--verify_only", action="store_true")
-    # Decomposition
-    parser.add_argument("--decomposition_mode", type=str, choices=["medscore", "factscore", "dndscore", "custom"], default="medscore")
-    parser.add_argument("--model_name_decomposition", type=str, default="gpt-4o-mini")
-    parser.add_argument("--server_decomposition", type=str, default="https://api.openai.com/v1")
-    parser.add_argument("--server_decomposition_key", type=str, default=os.environ.get("OPENAI_API_KEY", ""), help="API key for Decomposition server. Defaults to OpenAI key in environment.")
-    parser.add_argument("--decomp_prompt_path", type=str, default=None)
-    # Verification
-    parser.add_argument("--model_name_verification", type=str, default="gpt-4o-mini")
-    parser.add_argument("--server_verification", type=str, default="https://api.openai.com/v1")
-    parser.add_argument("--server_verification_key", type=str, default=os.environ.get("OPENAI_API_KEY", ""), help="API key for Verification server. Defaults to OpenAI key in environment.")
-    parser.add_argument("--verification_mode", type=str, choices=["internal", "medrag", "provided"], default="internal")
-    parser.add_argument("--provided_evidence_path", type=str, default=None)
-    return parser.parse_args()
+def main():
+    """Main entry point for the command-line script."""
+    parser = ArgumentParser(description="Run MedScore factuality evaluation from a configuration file.")
+    parser.add_argument("--config", type=str, required=True, help="Path to the YAML configuration file.")
+    parser.add_argument("--input_file", type=str, help="Override the input data file specified in the config.")
+    parser.add_argument("--output_dir", type=str, help="Override the output directory specified in the config.")
+    parser.add_argument("--decompose_only", action="store_true", help="Only run the decomposition step.")
+    parser.add_argument("--verify_only", action="store_true", help="Only run the verification step (requires existing decomposition file).")
+    args = parser.parse_args()
 
+    # Load and validate configuration from YAML file
+    try:
+        with open(args.config, 'r') as f:
+            config_data = yaml.safe_load(f)
 
-if __name__ == '__main__':
-    args = parse_args()
+        # Handle command-line overrides for file paths
+        if args.input_file:
+            config_data['input_file'] = args.input_file
+        if args.output_dir:
+            config_data['output_dir'] = args.output_dir
 
-    if not os.path.exists(args.output_dir):
-        os.makedirs(args.output_dir, exist_ok=True)
+        config = MedScoreConfig(**config_data)
 
-    if args.verification_mode == "provided":
-        if args.provided_evidence_path is not None:
-            with open(args.provided_evidence_path, "r") as f:
-                provided_evidence = json.load(f)
-        else:
-            raise InvalidArgumentException("Provided evidence path is required when verification_mode is 'provided'")
-    else:
-        provided_evidence = None
+    except (ValidationError, FileNotFoundError) as e:
+        logger.error(f"Configuration error: {e}")
+        sys.exit(1)
+    except yaml.YAMLError as e:
+        logger.error(f"Error parsing YAML config file: {e}")
+        sys.exit(1)
 
-    if args.decomposition_mode == "custom" and not args.decomp_prompt_path:
-        raise InvalidArgumentException("Must provide a decomposition prompt path with CustomDecomposer")
+    output_dir = config_data.get('output_dir', '.')
+    input_file = config_data.get('input_file')
 
-    # Initialize MedScore
-    scorer = MedScore(
-        model_name_decomposition=args.model_name_decomposition,
-        server_decomposition=args.server_decomposition,
-        server_decomposition_key=args.server_decomposition_key,
-        model_name_verification=args.model_name_verification,
-        server_verification=args.server_verification,
-        server_verification_key=args.server_verification_key,
-        verification_mode=args.verification_mode,
-        decomposition_mode=args.decomposition_mode,
-        response_key=args.response_key,
-        provided_evidence=provided_evidence,
-        custom_decomposition_prompt_path=args.decomp_prompt_path
-    )
+    if not input_file:
+        logger.error("Input file must be specified either in the config or via --input_file.")
+        sys.exit(1)
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+
+    # Initialize MedScore with the validated config
+    scorer = MedScore(config)
 
     # Load data
-    with jsonlines.open(args.input_file) as reader:
-        dataset = [item for item in reader.iter()]
+    try:
+        with jsonlines.open(input_file) as reader:
+            dataset = [item for item in reader.iter()]
+    except (FileNotFoundError, IOError) as e:
+        logger.error(f"Could not read input file at {input_file}: {e}")
+        sys.exit(1)
 
-    decomp_output_file = os.path.join(args.output_dir, "decompositions.jsonl")
-    verif_output_file = os.path.join(args.output_dir, "verifications.jsonl")
-    output_file = os.path.join(args.output_dir, "medscore_output.jsonl")
+    decomp_output_file = os.path.join(output_dir, "decompositions.jsonl")
+    verif_output_file = os.path.join(output_dir, "verifications.jsonl")
+    final_output_file = os.path.join(output_dir, "output.jsonl")
 
-    # Decompose and save intermediate
+    # --- Main Pipeline Execution ---
+    decompositions = []
     if not args.verify_only:
-        # Batch decompose. Save intermediate.
+        logger.info(f"Starting decomposition for {input_file}...")
         decompositions = scorer.decompose(dataset)
         with jsonlines.open(decomp_output_file, 'w') as writer:
             writer.write_all(decompositions)
-
+        logger.info(f"Decompositions saved to {decomp_output_file}")
         if args.decompose_only:
-            exit(0)
+            logger.info("Decomposition finished. Exiting as requested.")
+            sys.exit(0)
 
     if args.verify_only:
-        # Load pre-computed decompositions.
-        with jsonlines.open(os.path.join(args.output_dir, "decompositions.jsonl"), 'r') as reader:
-            decompositions = [item for item in reader.iter()]
+        try:
+            with jsonlines.open(decomp_output_file, 'r') as reader:
+                decompositions = [item for item in reader.iter()]
+            logger.info(f"Loaded existing decompositions from {decomp_output_file}")
+        except FileNotFoundError:
+            logger.error(f"Verify-only mode requires an existing decomposition file at {decomp_output_file}")
+            sys.exit(1)
 
-    # Batch verify. Save intermediate.
+    logger.info("Starting verification...")
     verifications = scorer.verify(decompositions)
     with jsonlines.open(verif_output_file, 'w') as writer:
         writer.write_all(verifications)
+    logger.info(f"Verifications saved to {verif_output_file}")
 
-    # Combine
-    combined_output = {
-        d["id"]: {
-            "id": d["id"],
-            "claims": []
-        } for d in decompositions
-    }
+    # Combine and aggregate scores
+    logger.info("Aggregating results...")
+    combined_output = {item["id"]: {"id": item["id"], "claims": []} for item in dataset}
     for verif in verifications:
-        claim_info = {
-            k: v for k, v in verif.items() if k not in {"id", "sentence_id", "claim_id"}
-        }
-        combined_output[verif['id']]['claims'].append(claim_info)
+        claim_info = {k: v for k, v in verif.items() if k not in {"id", "sentence_id", "claim_id"}}
+        if verif['id'] in combined_output:
+            combined_output[verif['id']]['claims'].append(claim_info)
 
-    # Aggregate scores
     for idx in combined_output:
-        claim_scores = [c['score'] for c in combined_output[idx]['claims']]
-        if len(claim_scores) == 0:
-            combined_output[idx]["score"] = None
-        else:
-            combined_output[idx]["score"] = sum(claim_scores) / len(claim_scores)
+        claim_scores = [c['score'] for c in combined_output[idx]['claims'] if 'score' in c]
+        combined_output[idx]["score"] = sum(claim_scores) / len(claim_scores) if claim_scores else None
 
-    combined_output = [v for k, v in combined_output.items()]
-    with jsonlines.open(output_file, 'w') as writer:
-        writer.write_all(combined_output)
+    with jsonlines.open(final_output_file, 'w') as writer:
+        writer.write_all(list(combined_output.values()))
+
+    logger.info(f"Processing complete. Final results are in {final_output_file}")
+
+
+if __name__ == '__main__':
+    main()

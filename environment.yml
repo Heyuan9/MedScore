@@ -1,22 +1,26 @@
 name: medscore
 channels:
   - pytorch
-  - nvidia
+  - conda-forge
   - defaults
 dependencies:
+  - python=3.12
   - pip
-  - python=3.12.7
   - pip:
-      - jsonlines==4.0.0
+      - backoff
       - faiss-cpu==1.9.0
-      - huggingface-hub==0.29.3
+      - huggingface-hub==0.34.3
+      - jsonlines==4.0.0
       - numpy==2.2.4
       - openai==1.93.0
       - overrides
       - pandas
       - pydantic==2.10.6
+      - pyyaml
+      - registrable==0.0.4
       - regex
-      - requests==2.32.3
+      - requests
       - tqdm
-      - backoff
       - spacy==3.8.4  # original paper uses 3.7.4
+      - nest_asyncio
+      - sentence_transformers

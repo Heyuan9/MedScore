@@ -1,0 +1,25 @@
+#################
+# MedScore Configuration File
+#################
+
+# --- Main Input/Output Files ---
+# These paths are relative to where you run the script.
+input_file: "../data/AskDocs.demo.jsonl"
+output_dir: "../results/medrag"
+response_key: "response"
+
+# --- Decomposition Configuration ---
+decomposer:
+  type: "medscore"  # Options: medscore, factscore, dndscore, custom
+  model_name: "gpt-4o-mini"
+  server_path: "https://api.openai.com/v1"
+
+# --- Verification Configuration ---
+verifier:
+  type: "medrag"
+  corpus_name: "Textbooks"  # "PubMed", "Textbooks", "StatPearls", "Wikipedia", "MedCorp", "MEDIC"
+  n_returned_docs: 5
+  cache: false  # Set to true for large datasets to improve performance
+  db_dir: "."
+  model_name: "gpt-4o"
+  server_path: "https://api.openai.com/v1"
