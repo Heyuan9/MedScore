@@ -60,4 +60,4 @@ include = ["medscore*"]
 # This includes non-python files within your package
 medscore = ["py.typed"]
 prompt = ["*.txt"]
-data = ["*.json", "*.jsonl"]
+# data = ["*.json", "*.jsonl"]

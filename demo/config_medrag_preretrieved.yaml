@@ -1,0 +1,22 @@
+#################
+# MedScore Configuration File
+#################
+
+# --- Main Input/Output Files ---
+# These paths are relative to where you run the script.
+input_file: "../data/AskDocs.demo.jsonl"
+output_dir: "../results/medrag_pre"
+response_key: "response"
+
+# --- Decomposition Configuration ---
+decomposer:
+  type: "medscore"  # Options: medscore, factscore, dndscore, custom
+  model_name: "gpt-4o-mini"
+  server_path: "https://api.openai.com/v1"
+
+# --- Verification Configuration ---
+verifier:
+  type: "provided"
+  provided_evidence_path: "../data/askdocsai_evidence.json"
+  model_name: "gpt-4o"
+  server_path: "https://api.openai.com/v1"
