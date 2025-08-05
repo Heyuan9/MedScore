@@ -143,16 +143,16 @@ class InternalVerifier(Verifier):
 
 
 class ProvidedEvidenceVerifier(Verifier):
+    """Verify claims against a pre-provided `evidence` key"""
     def __init__(
             self,
             id_to_evidence: Dict[str, str],
             *args,
-            **kw
+            **kwargs
     ):
-        super().__init__(*args, **kw)
+        super().__init__(*args, **kwargs)
         self.id_to_evidence = id_to_evidence
 
-    """Verify claims against a pre-provided `evidence` key"""
     def prepare_verification_input(self, decompositions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         verification_input = []
         for d in decompositions:
@@ -174,19 +174,19 @@ class ProvidedEvidenceVerifier(Verifier):
 
 
 class MedRAGVerifier(Verifier):
+    """Verify claims against the MedRAG corpus"""
     def __init__(
         self,
         retriever_name: str = "MedCPT",
-        # corpus_name: str = "MEDIC",
-        corpus_name: str = "StatPearls",
+        corpus_name: str = "Textbooks",
         db_dir: str = os.environ.get("MEDRAG_CORPUS", "./corpus"),
         HNSW: bool = False,
         cache: bool = False,
         n_returned_docs: int = 5,
         *args,
-        **kw
+        **kwargs
     ):
-        super().__init__(*args, **kw)
+        super().__init__(*args, **kwargs)
         self.retriever = MedRAGRetriever(
             retriever_name=retriever_name,
             corpus_name=corpus_name,
