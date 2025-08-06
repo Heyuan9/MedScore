@@ -36,6 +36,7 @@ def env_constructor(loader, node):
     """Constructor for the !env tag."""
     value = loader.construct_scalar(node)
     env_value = os.environ.get(value)
+    logger.debug(f"Replacing {value} with its environment variable.")
     return env_value
 # Register the custom tag with PyYAML
 yaml.add_constructor('!env', env_constructor, Loader=yaml.SafeLoader)
