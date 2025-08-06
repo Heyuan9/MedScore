@@ -1,32 +1,21 @@
+##################
 # MedScore Configuration File
+##################
 
 # --- Main Input/Output Files ---
-# These paths are relative to where you run the script.
 input_file: "../data/AskDocs.demo.jsonl"
-output_dir: "../results"
-# The key in the input .jsonl file that contains the text to be evaluated.
+output_dir: "../results/decompose_only"
 response_key: "response"
 
 # --- Decomposition Configuration ---
-# All keys for the decomposer are at this level.
 decomposer:
   type: "medscore"  # Options: medscore, factscore, dndscore, custom
-  model_name: "gpt-4o-mini"
-  server_path: "https://api.openai.com/v1"
+  model_name: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+  server_path: "https://api.together.xyz/v1"
+  api_key: !env NEW_API_KEY
 
 # --- Verification Configuration ---
-# All keys for the verifier are at this level.
 verifier:
   type: "internal" # Options: internal, medrag, provided
   model_name: "gpt-4o"
   server_path: "https://api.openai.com/v1"
-
-  # --- Example for 'provided' verifier ---
-  # type: "provided"
-  # provided_evidence_path: "data/askdocsai_evidence.json"
-
-  # --- Example for 'medrag' verifier ---
-  # type: "medrag"
-  # corpus_name: "MEDIC" # "PubMed", "Textbooks", "StatPearls", "Wikipedia", "MedText", "MedCorp", "MEDIC"
-  # n_returned_docs: 5
-  # cache: true # Set to true for large datasets to improve performance

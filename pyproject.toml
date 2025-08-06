@@ -44,7 +44,8 @@ dependencies = [
     "spacy==3.8.4",
     "tqdm",
     "nest_asyncio",
-    "sentence_transformers"
+    "sentence_transformers",
+    "python-dotenv"
 ]
 
 [project.urls]

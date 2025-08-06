@@ -40,14 +40,14 @@ python -m spacy download en_core_web_sm
   pip install .
   ```
 
-1. Add any API keys to your `~/.bashrc`
+1. Add any API keys to your `~/.bashrc` or to a `.env` file in the root directory.
 
     ```bash
    export OPENAI_API_KEY=""
    export TOGETHER_API_KEY=""
     ```
 
-1. [Optional] Set `MEDRAG_CORPUS` environment variable.
+1. [Optional] Set `MEDRAG_CORPUS` environment variable or add it to a `.env` file in the root directory.
 
     ```bash
    export MEDRAG_CORPUS=""
@@ -63,6 +63,16 @@ MedScore v0.1.1 is now run from the command line using a single configuration fi
 ```bash
 python -m medscore.medscore --config /path/to/your/config.yaml
 ```
+
+All options:
+
+- `--config`: Path to the YAML configuration file. The config file is explained below.
+- `--input_file`: JSONLines-formatted input file. Override the input data file specified in the config.
+- `--output_dir`: Path to save the intermediate and result files. Override the output directory specified in the config.
+- `--decompose_only`: Only run the decomposition step. Saves to `output_dir/decompositions.jsonl`.
+- `--verify_only`: Only run the verification step (requires an existing decomposition file in the `output_dir`) Saves to `output_dir/verifications.jsonl`.
+
+The final output is saved to `output_dir/output.jsonl`.
 
 All settings are defined within the YAML configuration file. You can create different config files for different experiments.
 
@@ -96,7 +106,7 @@ There are three main sections of a MedScore config file.
     - Default: `gpt-4o-mini`
   - `server_path`: The server path for the decomposition model. 
     - Default: `https://api.openai.com/v1`
-  - `api_key`: 
+  - `api_key`: API key for the specified `server_path`. You can use environment variables by prefacing them with `!env`. Example: `!env TOGETHER_API_KEY`
 
 
 **3. Verification-related arguments**
@@ -112,7 +122,7 @@ There are three main sections of a MedScore config file.
     - Default: `gpt-4o`
   - `server_path`: The server path for the decomposition model. 
     - Default: `https://api.openai.com/v1`
-  - `api_key`: 
+  - `api_key`: API key for the specified `server_path`. You can use environment variables by prefacing them with `!env`. Example: `!env TOGETHER_API_KEY`
   - `provided_evidence_path`: Path to `json` file in `{"{id}": "{evidence}"}` format, where the `id` is the same as the entry id in `input_file`.
 
 

@@ -6,20 +6,39 @@ import sys
 import logging
 import json
 import yaml
+import re
 from typing import List, Any, Dict
 from argparse import ArgumentParser
 
 import jsonlines
 from pydantic import ValidationError
+from dotenv import load_dotenv
 
 from .utils import parse_sentences
 from .config_schema import MedScoreConfig, ProvidedEvidenceVerifierConfig
 from .registry import build_component
 
+# Load variables from .env file into the environment
+load_dotenv()
+
 # --- Setup Logging ---
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
+
+
+###################
+# Helpers
+###################
+
+# Add a custom !env tag to load environment variables
+def env_constructor(loader, node):
+    """Constructor for the !env tag."""
+    value = loader.construct_scalar(node)
+    env_value = os.environ.get(value)
+    return env_value
+# Register the custom tag with PyYAML
+yaml.add_constructor('!env', env_constructor, Loader=yaml.SafeLoader)
 
 
 class MedScore:
@@ -34,7 +53,6 @@ class MedScore:
 
         logger.info(f"Building verifier of type: {config.verifier.type}")
         self.verifier = build_component(config.verifier, "verifier")
-
         self.response_key = config.response_key
 
     def decompose(self, dataset: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -71,15 +89,28 @@ class MedScore:
         return verifier_output
 
 
-def main():
-    """Main entry point for the command-line script."""
+def parse_args():
+    """Parse command line arguments."""
     parser = ArgumentParser(description="Run MedScore factuality evaluation from a configuration file.")
     parser.add_argument("--config", type=str, required=True, help="Path to the YAML configuration file.")
     parser.add_argument("--input_file", type=str, help="Override the input data file specified in the config.")
     parser.add_argument("--output_dir", type=str, help="Override the output directory specified in the config.")
     parser.add_argument("--decompose_only", action="store_true", help="Only run the decomposition step.")
     parser.add_argument("--verify_only", action="store_true", help="Only run the verification step (requires existing decomposition file).")
+    parser.add_argument("--debug", action="store_true", help="Print debug logs.")
     args = parser.parse_args()
+    return args
+
+
+#################
+# Main
+#################
+def main():
+    """Main entry point for the command-line script."""
+    args = parse_args()
+
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
 
     # Load and validate configuration from YAML file
     try:
@@ -91,9 +122,8 @@ def main():
             config_data['input_file'] = args.input_file
         if args.output_dir:
             config_data['output_dir'] = args.output_dir
-
+        logger.debug(f"Loaded the following from {args.config}: {config_data}")
         config = MedScoreConfig(**config_data)
-
     except (ValidationError, FileNotFoundError) as e:
         logger.error(f"Configuration error: {e}")
         sys.exit(1)
@@ -135,7 +165,7 @@ def main():
             writer.write_all(decompositions)
         logger.info(f"Decompositions saved to {decomp_output_file}")
         if args.decompose_only:
-            logger.info("Decomposition finished. Exiting as requested.")
+            logger.info("Decomposition finished.")
             sys.exit(0)
 
     if args.verify_only:
