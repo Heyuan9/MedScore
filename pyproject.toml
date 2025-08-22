@@ -1,0 +1,64 @@
+[build-system]
+# PyYAML is no longer needed for the build process
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "MedScore"
+version = "0.1.0"
+authors = [
+  { name="Heyuan Huang", email="hhuan134@jh.edu" },
+  { name="Alexandra DeLucia" },
+]
+description = "A framework for factuality scoring in medical responses"
+readme = "README.md"
+license = { text = "MIT License" }
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Medical Science Apps",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+# Dependencies are now listed directly and statically here.
+# This list is taken from the corrected environment.yml.
+dependencies = [
+    "backoff",
+    "faiss-cpu==1.9.0",
+    "huggingface-hub==0.34.3",
+    "jsonlines==4.0.0",
+    "numpy",
+    "openai==1.93.0",
+    "overrides",
+    "pandas",
+    "pydantic==2.10.6",
+    "pyyaml",
+    "regex",
+    "requests",
+    "spacy==3.8.4",
+    "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
+    "tqdm",
+    "nest_asyncio",
+    "sentence_transformers",
+    "python-dotenv"
+]
+
+[project.urls]
+Homepage = "https://github.com/Heyuan9/MedScore"
+Repository = "https://github.com/Heyuan9/MedScore"
+
+[tool.setuptools.packages.find]
+# This automatically finds your 'medscore' package
+where = ["."]
+include = ["medscore*"]
+
+[tool.setuptools.package-data]
+# This includes non-python files within your package
+medscore = ["py.typed"]
+prompt = ["*.txt"]
+# data = ["*.json", "*.jsonl"]

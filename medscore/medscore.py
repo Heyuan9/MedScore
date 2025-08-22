@@ -139,12 +139,12 @@ if __name__ == '__main__':
             with open(args.provided_evidence_path, "r") as f:
                 provided_evidence = json.load(f)
         else:
-            raise InvalidArgumentException("Provided evidence path is required when verification_mode is 'provided'")
+            raise ValueError("Provided evidence path is required when verification_mode is 'provided'")
     else:
         provided_evidence = None
 
     if args.decomposition_mode == "custom" and not args.decomp_prompt_path:
-        raise InvalidArgumentException("Must provide a decomposition prompt path with CustomDecomposer")
+        raise ValueError("Must provide a decomposition prompt path with CustomDecomposer")
 
     # Initialize MedScore
     scorer = MedScore(
