@@ -121,7 +121,7 @@ def parse_args():
     parser = ArgumentParser()
     # General
     parser.add_argument("--input_file", required=True, type=str)
-    parser.add_argument("--output_dir", default="", type=str)
+    parser.add_argument("--output_dir", default=".", type=str)
     parser.add_argument("--response_key", type=str, default="response")
     parser.add_argument("--decompose_only", action="store_true")
     parser.add_argument("--verify_only", action="store_true")

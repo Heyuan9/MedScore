@@ -31,7 +31,9 @@ conda run -n $ENV_NAME pip install "$GIT_URL"
 
 echo
 echo ">>> Step 3: Verifying installation by running the --help command..."
-conda run -n $ENV_NAME medscore.medscore --help
+conda run -n $ENV_NAME python -m medscore.medscore --help
+
+conda run -n $ENV_NAME python -m medscore.medscore --input_file data/AskDocs.demo.jsonl --verification_mode "medrag"
 
 echo
 echo ">>> Step 4: Cleaning up by removing the temporary environment..."
