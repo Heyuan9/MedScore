@@ -59,6 +59,8 @@ class MedScore(object):
             server_verification_key: str = "",
             provided_evidence: Optional[Dict[str, str]] = None,
             custom_decomposition_prompt_path: Optional[str] = None,
+            medrag_corpus: Optional[str] = "Textbooks",
+            medrag_corpus_dir: Optional[str] = "./corpus"
     ):
         self.response_key = response_key
         decomp_class = decomposition_mode_to_decompser(decomposition_mode)
@@ -69,12 +71,22 @@ class MedScore(object):
             api_key=server_decomposition_key
         )
         verif_class = verification_mode_to_verifier(verification_mode)
-        self.verifier = verif_class(
-            model_name=model_name_verification,
-            server_path=server_verification,
-            id_to_evidence=provided_evidence,
-            api_key=server_verification_key
-        )
+        if verif_class is MedRAGVerifier:  # not ideal but in lieu of refactoring
+            self.verifier = verif_class(
+                model_name = model_name_verification,
+                server_path = server_verification,
+                id_to_evidence = provided_evidence,
+                api_key = server_verification_key,
+                corpus_name = medrag_corpus,
+                db_dir = medrag_corpus_dir
+            )
+        else:
+            self.verifier = verif_class(
+                model_name = model_name_verification,
+                server_path = server_verification,
+                id_to_evidence = provided_evidence,
+                api_key = server_verification_key
+            )
 
     def decompose(
         self,
@@ -125,6 +137,8 @@ def parse_args():
     parser.add_argument("--server_verification_key", type=str, default=os.environ.get("OPENAI_API_KEY", ""), help="API key for Verification server. Defaults to OpenAI key in environment.")
     parser.add_argument("--verification_mode", type=str, choices=["internal", "medrag", "provided"], default="internal")
     parser.add_argument("--provided_evidence_path", type=str, default=None)
+    parser.add_argument("--medrag_corpus", type=str, default="Textbooks", help="Corpus to use with MedRAG.")
+    parser.add_argument("--medrag_corpus_dir", type=str, default="./corpus", help="Directory containing corpus files for MedRAG.")
     return parser.parse_args()
 
 
@@ -158,7 +172,9 @@ if __name__ == '__main__':
         decomposition_mode=args.decomposition_mode,
         response_key=args.response_key,
         provided_evidence=provided_evidence,
-        custom_decomposition_prompt_path=args.decomp_prompt_path
+        custom_decomposition_prompt_path=args.decomp_prompt_path,
+        medrag_corpus=args.medrag_corpus,
+        medrag_corpus_dir=args.medrag_corpus_dir
     )
 
     # Load data

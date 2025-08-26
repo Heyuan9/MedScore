@@ -14,14 +14,14 @@
 # Use a specific name for the temporary environment to avoid conflicts.
 ENV_NAME="medscore_temp_env"
 # The correct git URL format for pip to install from a specific branch.
-GIT_URL="git+https://github.com/Heyuan9/MedScore.git@setup"
+GIT_URL="git+https://github.com/Heyuan9/MedScore.git@setup-mod"
 
 # --- Script Execution ---
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
 echo ">>> Step 1: Creating a temporary conda environment named '$ENV_NAME'..."
-conda create -n $ENV_NAME python=3.9 -y
+conda create -n $ENV_NAME python=3.12 -y
 
 echo
 echo ">>> Step 2: Installing MedScore from the 'setup' branch..."
