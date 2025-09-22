@@ -42,7 +42,7 @@ echo
 echo ">>> Step 3: Verifying installation by running the --help command..."
 conda run -n "${ENV_NAME}" python -m medscore.medscore --help
 
-conda run -n "${ENV_NAME}" python -m medscore.medscore --input_file data/AskDocs.demo.jsonl --verification_mode "medrag"
+conda run -n "${ENV_NAME}" python -m medscore.medscore --config "demo/config.yaml"
 
 echo
 echo "✅ Script completed successfully!"

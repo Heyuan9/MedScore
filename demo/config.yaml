@@ -3,8 +3,8 @@
 ##################
 
 # --- Main Input/Output Files ---
-input_file: "../data/AskDocs.demo.jsonl"
-output_dir: "../results/decompose_only"
+input_file: "data/AskDocs.demo.jsonl"
+output_dir: "results"
 response_key: "response"
 
 # --- Decomposition Configuration ---
@@ -12,7 +12,7 @@ decomposer:
   type: "medscore"  # Options: medscore, factscore, dndscore, custom
   model_name: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
   server_path: "https://api.together.xyz/v1"
-  api_key: !env NEW_API_KEY
+  api_key: !env TOGETHER_API_KEY
 
 # --- Verification Configuration ---
 verifier:
