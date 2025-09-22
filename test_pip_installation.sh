@@ -13,32 +13,36 @@
 # --- Configuration ---
 # Use a specific name for the temporary environment to avoid conflicts.
 ENV_NAME="medscore_temp_env"
+BRANCH="presenticized"
 # The correct git URL format for pip to install from a specific branch.
-GIT_URL="git+https://github.com/Heyuan9/MedScore.git@presenticized"
+GIT_URL="git+https://github.com/Heyuan9/MedScore.git@${BRANCH}"
+
+# --- Cleanup function ---
+cleanup() {
+    echo
+    echo ">>> Cleaning up: Removing the temporary environment '${ENV_NAME}'..."
+    conda env remove -n ${ENV_NAME} -y || true
+}
+trap cleanup EXIT
 
 # --- Script Execution ---
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
 echo ">>> Step 1: Creating a temporary conda environment named '${ENV_NAME}'..."
-conda create -n ${ENV_NAME} python=3.12 -y
+conda create -n "${ENV_NAME}" python=3.12 -y
 
 echo
 echo ">>> Step 2: Installing MedScore..."
 # Use 'conda run' to execute commands within the new environment
 # without needing to activate it in the script's shell.
-conda run -n ${ENV_NAME} pip install "${GIT_URL}"
+conda run -n "${ENV_NAME}" pip install "${GIT_URL}"
 
 echo
 echo ">>> Step 3: Verifying installation by running the --help command..."
-conda run -n ${ENV_NAME} python -m medscore.medscore --help
+conda run -n "${ENV_NAME}" python -m medscore.medscore --help
 
-conda run -n ${ENV_NAME} python -m medscore.medscore --input_file data/AskDocs.demo.jsonl --verification_mode "medrag"
-
-echo
-echo ">>> Step 4: Cleaning up by removing the temporary environment..."
-conda env remove -n ${ENV_NAME} -y
+conda run -n "${ENV_NAME}" python -m medscore.medscore --input_file data/AskDocs.demo.jsonl --verification_mode "medrag"
 
 echo
 echo "✅ Script completed successfully!"
-
