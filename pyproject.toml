@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "MedScore"
+version = "0.1.1"
 authors = [
   { name="Heyuan Huang", email="hhuan134@jh.edu" },
   { name="Alexandra DeLucia" },
