@@ -3,9 +3,75 @@ Misc utility functions
 """
 from typing import Optional, Union, List, Dict, Any, Iterable
 from itertools import islice
+import logging
+import os
 
 import spacy
+import yaml
+from dotenv import load_dotenv
+
+from .config_schema import MedScoreConfig
+
 nlp = spacy.load("en_core_web_sm")
+logger = logging.getLogger(__name__)
+
+
+def env_constructor(loader, node):
+    """Constructor for the !env tag in YAML configs."""
+    value = loader.construct_scalar(node)
+    env_value = os.environ.get(value)
+    logger.debug(f"Replacing {value} with its environment variable.")
+    return env_value
+
+yaml.add_constructor('!env', env_constructor, Loader=yaml.SafeLoader)
+
+def load_config(
+        config_path: str,
+        argument_overrides: Optional[Dict[str, Any]] = None,
+) -> MedScoreConfig:
+    """
+    Loads a YAML config file with !env support and returns a validated MedScoreConfig object.
+    Args:
+        argument_overrides:
+        config_path (str): Path to the YAML configuration file.
+    Returns:
+        MedScoreConfig: Validated config object.
+    Raises:
+        FileNotFoundError, yaml.YAMLError, pydantic.ValidationError
+    """
+    # Load environment variables from .env file if present
+    load_dotenv()
+
+    # Load and parse the YAML config file
+    try:
+        with open(config_path, 'r') as f:
+            config_data = yaml.safe_load(f)
+        logger.debug(f"Loaded config from {config_path}: {config_data}")
+    except (ValidationError, FileNotFoundError) as e:
+        logger.error(f"Configuration error: {e}")
+        sys.exit(1)
+    except yaml.YAMLError as e:
+        logger.error(f"Error parsing YAML config file: {e}")
+        sys.exit(1)
+
+    # Apply command-line argument overrides
+    if argument_overrides:
+        for arg_field in ["input_file", "output_dir"]:
+            if arg_field in argument_overrides and argument_overrides[arg_field] is not None:
+                config_data[arg_field] = argument_overrides[arg_field]
+        logger.debug(f"Applied argument overrides: {argument_overrides}")
+
+    # Validate required fields
+    if not config_data.get("input_file"):
+        logger.error("Input file must be specified either in the config or via --input_file.")
+        sys.exit(1)
+
+    if not config_data.get("output_dir"):
+        config_data["output_dir"] = "."
+        logger.warning("Output directory not specified. Defaulting to current directory.")
+
+    # Create MedScoreConfig object
+    return MedScoreConfig(**config_data)
 
 
 def process_claim(claims: List[str]) -> List[str]:

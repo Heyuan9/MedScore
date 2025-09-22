@@ -5,21 +5,16 @@ import os
 import sys
 import logging
 import json
-import yaml
 import re
 from typing import List, Any, Dict
 from argparse import ArgumentParser
 
 import jsonlines
-from pydantic import ValidationError
-from dotenv import load_dotenv
 
-from .utils import parse_sentences
+from .utils import parse_sentences, load_config
 from .config_schema import MedScoreConfig, ProvidedEvidenceVerifierConfig
 from .registry import build_component
 
-# Load variables from .env file into the environment
-load_dotenv()
 
 # --- Setup Logging ---
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -30,18 +25,6 @@ logger = logging.getLogger(__name__)
 ###################
 # Helpers
 ###################
-
-# Add a custom !env tag to load environment variables
-def env_constructor(loader, node):
-    """Constructor for the !env tag."""
-    value = loader.construct_scalar(node)
-    env_value = os.environ.get(value)
-    logger.debug(f"Replacing {value} with its environment variable.")
-    return env_value
-# Register the custom tag with PyYAML
-yaml.add_constructor('!env', env_constructor, Loader=yaml.SafeLoader)
-
-
 class MedScore:
     """The main MedScore pipeline class."""
     def __init__(self, config: MedScoreConfig):
@@ -143,37 +126,17 @@ def main():
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
-    # Load and validate configuration from YAML file
-    try:
-        with open(args.config, 'r') as f:
-            config_data = yaml.safe_load(f)
-
-        # Handle command-line overrides for file paths
-        if args.input_file:
-            config_data['input_file'] = args.input_file
-        if args.output_dir:
-            config_data['output_dir'] = args.output_dir
-        logger.debug(f"Loaded the following from {args.config}: {config_data}")
-        config = MedScoreConfig(**config_data)
-    except (ValidationError, FileNotFoundError) as e:
-        logger.error(f"Configuration error: {e}")
-        sys.exit(1)
-    except yaml.YAMLError as e:
-        logger.error(f"Error parsing YAML config file: {e}")
-        sys.exit(1)
-
-    output_dir = config_data.get('output_dir', '.')
-    input_file = config_data.get('input_file')
-
-    if not input_file:
-        logger.error("Input file must be specified either in the config or via --input_file.")
-        sys.exit(1)
+    # Load configuration from YAML file
+    # This also applies any command-line overrides for input/output paths.
+    medscore_config = load_config(args.config, argument_overrides=vars(args))
+    output_dir = medscore_config.output_dir
+    input_file = medscore_config.input_file
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
 
     # Initialize MedScore with the validated config
-    scorer = MedScore(config)
+    scorer = MedScore(medscore_config)
 
     # Load data
     try:

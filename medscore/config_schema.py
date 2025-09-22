@@ -87,7 +87,8 @@ class MedScoreConfig(BaseModel):
     # from the Union defined above.
     decomposer: DecomposerConfig = Field(..., discriminator="type")
     verifier: VerifierConfig = Field(..., discriminator="type")
-
+    input_file: str
+    output_dir: str
     response_key: str = "response"
     # If True, MedScore will expect each input record to include a pre-senticized
     # list of sentence objects under the key "sentences" and will use those
