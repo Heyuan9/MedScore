@@ -308,3 +308,36 @@ The AskDocs dataset is in the `./data` folder. It has 300 samples and 4 keys:
 
 The AskDocs.demo dataset has 20 random samples from the AskDocs dataset. It is more cost-efficient to experiment on this small-scale dataset.
 
+### Presenticized (pre-senticized) inputs
+
+If your input data already contains sentence-level annotations (for example, produced by an external senticizer), MedScore can use those directly instead of running its internal sentence splitter. To enable this, add the top-level flag `presenticized: true` to your YAML config.
+
+Behavior when presenticized is true:
+- MedScore will look for a `sentences` list in each input record and use those entries as the source of sentences.
+- Each item in `sentences` is a dict with a `text` field and an optional `sentence_id` field. If `sentence_id` is not provided, it will be auto-generated based on the list index.
+- If the original `response` (or configured `response_key`) is present, it will be used as the `context` passed to the decomposer; otherwise the context will be reconstructed by joining the provided sentence texts.
+- Records missing a valid `sentences` list will be skipped with a warning.
+
+Example YAML config enabling presenticized inputs:
+
+```yaml
+input_file: "data/AskDocs.demo.jsonl"
+output_dir: "results"
+response_key: "response"
+presenticized: true
+
+decomposer:
+  type: "medscore"
+  model_name: "gpt-4o-mini"
+
+verifier:
+  type: "internal"
+```
+
+Example input JSONL record (per-line):
+
+```json
+{"id":"123","response":"optional original text","sentences":[{"text":"Sentence 1.","sentence_id": 0, "span_start":0,"span_end":10},{"text":"Sentence 2.", "sentence_id": 1, "span_start":11,"span_end":25}]}
+```
+
+MedScore will then skip internal sentence splitting and use the provided sentences for decomposition and verification.

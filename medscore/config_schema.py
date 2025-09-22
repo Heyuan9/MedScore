@@ -89,3 +89,7 @@ class MedScoreConfig(BaseModel):
     verifier: VerifierConfig = Field(..., discriminator="type")
 
     response_key: str = "response"
+    # If True, MedScore will expect each input record to include a pre-senticized
+    # list of sentence objects under the key "sentences" and will use those
+    # instead of running its internal sentence-splitting (senticizing) step.
+    presenticized: bool = False

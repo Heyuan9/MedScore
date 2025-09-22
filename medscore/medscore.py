@@ -55,21 +55,51 @@ class MedScore:
         logger.info(f"Building verifier of type: {config.verifier.type}")
         self.verifier = build_component(config.verifier, "verifier")
         self.response_key = config.response_key
+        # If True, inputs are expected to include a pre-senticized "sentences" field.
+        self.presenticized = getattr(config, "presenticized", False)
 
     def decompose(self, dataset: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Decomposes responses from a dataset into individual claims."""
         decomposer_input = []
         for item in dataset:
-            if self.response_key not in item:
-                logger.warning(f"ID '{item.get('id')}' missing response_key '{self.response_key}'. Skipping.")
-                continue
-            sentences = parse_sentences(item[self.response_key])
+            # Accept items with 'sentences' when presenticized; otherwise require response_key.
+            if self.presenticized:
+                if "sentences" not in item or not isinstance(item["sentences"], list):
+                    logger.warning(f"ID '{item.get('id')}' missing 'sentences' list while presenticized=True. Skipping.")
+                    continue
+            else:
+                if self.response_key not in item:
+                    logger.warning(f"ID '{item.get('id')}' missing response_key '{self.response_key}'. Skipping.")
+                    continue
+
+            # Obtain sentences either from provided field or by parsing the response text
+            if self.presenticized:
+                sentences = item["sentences"]
+            else:
+                sentences = parse_sentences(item[self.response_key])
+
             for idx, sentence in enumerate(sentences):
+                # Support sentence as dict (with 'text' and optional 'sentence_id') or as plain string
+                if isinstance(sentence, dict):
+                    sentence_text = sentence.get("text", "").strip()
+                    sentence_id = sentence.get("sentence_id", idx)
+                else:
+                    sentence_text = str(sentence).strip()
+                    sentence_id = idx
+
+                # Build context: prefer original response text if present, else reconstruct
+                if self.response_key in item and item[self.response_key]:
+                    context = item[self.response_key]
+                else:
+                    context = " ".join(
+                        (s.get("text") if isinstance(s, dict) else str(s)) for s in sentences
+                    )
+
                 decomposer_input.append({
-                    "id": item["id"],
-                    "sentence_id": idx,
-                    "context": item[self.response_key],
-                    "sentence": sentence["text"].strip(),
+                    "id": item.get("id"),
+                    "sentence_id": sentence_id,
+                    "context": context,
+                    "sentence": sentence_text,
                 })
 
         if not decomposer_input:
