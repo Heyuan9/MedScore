@@ -45,7 +45,8 @@ dependencies = [
     "tqdm",
     "nest_asyncio",
     "sentence_transformers",
-    "python-dotenv"
+    "python-dotenv",
+    "registrable==0.0.4"
 ]
 
 [project.urls]

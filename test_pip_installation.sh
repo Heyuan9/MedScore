@@ -14,7 +14,7 @@
 # Use a specific name for the temporary environment to avoid conflicts.
 ENV_NAME="medscore_temp_env"
 # The correct git URL format for pip to install from a specific branch.
-GIT_URL="git+https://github.com/Heyuan9/MedScore.git"
+GIT_URL="git+https://github.com/Heyuan9/MedScore.git@presenticized"
 
 # --- Script Execution ---
 # Exit immediately if a command exits with a non-zero status.
