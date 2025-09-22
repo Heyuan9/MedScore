@@ -3,7 +3,7 @@
 ##################
 
 # --- Main Input/Output Files ---
-input_file: "data/AskDocs.demo.jsonl"
+# input_file: "data/AskDocs.demo.jsonl"
 output_dir: "results"
 response_key: "response"
 

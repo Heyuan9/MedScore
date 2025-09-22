@@ -12,7 +12,7 @@ from argparse import ArgumentParser
 import jsonlines
 
 from .utils import parse_sentences, load_config
-from .config_schema import MedScoreConfig, ProvidedEvidenceVerifierConfig
+from .config_schema import MedScoreConfig
 from .registry import build_component
 
 
@@ -20,7 +20,7 @@ from .registry import build_component
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
-
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 ###################
 # Helpers
@@ -129,6 +129,16 @@ def main():
     # Load configuration from YAML file
     # This also applies any command-line overrides for input/output paths.
     medscore_config = load_config(args.config, argument_overrides=vars(args))
+
+    # Validate required fields
+    if not medscore_config.input_file:
+        logger.error("Input file must be specified either in the config or via --input_file.")
+        sys.exit(1)
+
+    if not medscore_config.output_dir:
+        medscore_config.output_dir = "."
+        logger.warning("Output directory not specified. Defaulting to current directory.")
+
     output_dir = medscore_config.output_dir
     input_file = medscore_config.input_file
 

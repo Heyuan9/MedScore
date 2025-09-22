@@ -5,10 +5,12 @@ from typing import Optional, Union, List, Dict, Any, Iterable
 from itertools import islice
 import logging
 import os
+import sys
 
 import spacy
 import yaml
 from dotenv import load_dotenv
+from pydantic import ValidationError
 
 from .config_schema import MedScoreConfig
 
@@ -60,15 +62,6 @@ def load_config(
             if arg_field in argument_overrides and argument_overrides[arg_field] is not None:
                 config_data[arg_field] = argument_overrides[arg_field]
         logger.debug(f"Applied argument overrides: {argument_overrides}")
-
-    # Validate required fields
-    if not config_data.get("input_file"):
-        logger.error("Input file must be specified either in the config or via --input_file.")
-        sys.exit(1)
-
-    if not config_data.get("output_dir"):
-        config_data["output_dir"] = "."
-        logger.warning("Output directory not specified. Defaulting to current directory.")
 
     # Create MedScoreConfig object
     return MedScoreConfig(**config_data)
