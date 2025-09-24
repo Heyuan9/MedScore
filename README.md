@@ -122,7 +122,7 @@ There are three main sections of a MedScore config file.
   - `prompt_path`: Path to a `txt` file containing a system prompt for decomposition. See the prompts in `medscore/prompts.py` for examples. **This should only be set if you are using a custom decomposer**.
   - `model_name`: The name of the model for verifying the response. It should be a model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or a locally-hosted vLLM model.
     - Default: `gpt-4o` The paper use `mistralai/Mistral-Small-24B-Instruct-2501`
-  - `server_path`: The server path for the verification model. Refer to the [vLLM](https://huggingface.co/mistralai/Mistral-Small-24B-Instruct-2501) Hugging Face tutorial for open-sourced LLM server path: http://<your-server>:8000/v1
+  - `server_path`: The server path for the verification model. Refer to the [vLLM](https://huggingface.co/mistralai/Mistral-Small-24B-Instruct-2501) Hugging Face tutorial for open-sourced LLM server path: `http://<your-server>:8000/v1`
     - Default: `https://api.openai.com/v1`
   - `api_key`: API key for the specified `server_path`. You can use environment variables by prefacing them with `!env`. Example: `!env TOGETHER_API_KEY`
   - `provided_evidence_path`: Path to `json` file in `{"{id}": "{evidence}"}` format, where the `id` is the same as the entry id in `input_file`.
