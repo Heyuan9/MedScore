@@ -131,7 +131,7 @@ There are three main sections of a MedScore config file.
 All of the decomposition and verification arguments are built from the classes in `medscore.decomposer` and `medscore.verifier`, respectively.
 
 
-#### Config.yaml Examples
+#### Config.yaml Examples in the demo folder
 
 **1. MedScore Decomposer with Internal Verification**
 
@@ -161,7 +161,7 @@ verifier:
 ```
 
 
-**1. MedScore Decomposer with MedRAG Verification and locally-hosted model**
+**2. MedScore Decomposer with MedRAG Verification and locally-hosted model**
 
 ```yaml
 #################
@@ -185,8 +185,8 @@ decomposer:
 verifier:
   type: "medrag"
   model_name: "mistralai/Mistral-Small-24B-Instruct-2501"
-  server_path: "http://localhost:8000"
-  corpus_name: "Textbooks"  # "PubMed", "Textbooks", "StatPearls", "Wikipedia", "MedCorp", "MEDIC"
+  server_path: "http://localhost:8000/v1"
+  corpus_name: "Textbooks"  # options: "PubMed", "Textbooks", "StatPearls", "Wikipedia", "MedCorp", "MEDIC". Our paper uses MEDIC.
   n_returned_docs: 5
   cache: false  # Set to true for large datasets to improve performance
   db_dir: "."
