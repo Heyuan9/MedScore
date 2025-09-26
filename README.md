@@ -21,35 +21,50 @@ If you use this tool, please cite
 
 ## Installation and Setup
 
+There are two options for installation. For editing the code, we recommend the `development install` option. 
+For running the code as-is, we recommend the `standard install` option.
+
+### Standard install
+
+Pip install from the repository.:
+
+```bash
+pip install git+https://github.com/Heyuan9/MedScore.git
+```
+
+### Development install
+
+This option allows you to edit the code and have changes reflected without re-installing.
+
 1. Clone the repository
 
-```bash
-git clone git@github.com:Heyuan9/MedScore.git
-```
+    ```bash
+    git clone git@github.com:Heyuan9/MedScore.git
+    ```
 
-1. [Optional] Create a new environment
+2. Create a new environment
 
-```bash
-conda env create --file=environment.yml
-conda activate medscore
-python -m spacy download en_core_web_sm
-```
+    ```bash
+    conda env create --file=environment.yml
+    conda activate medscore
+    ```
 
-1. [Optional] Install the MedScore package for easy command-line usage
 
-  ```bash
-  cd /path/to/MedScore
-  pip install .
-  ```
+3. Install the MedScore package for easy command-line usage
 
-1. Add any API keys to your `~/.bashrc` or to a `.env` file in the root directory.
+      ```bash
+      cd /path/to/MedScore
+      pip install .
+      ```
+
+4. Add any API keys to your `~/.bashrc` or to a `.env` file in the root directory.
 
     ```bash
    export OPENAI_API_KEY=""
    export TOGETHER_API_KEY=""
     ```
 
-1. [Optional] Set `MEDRAG_CORPUS` environment variable or add it to a `.env` file in the root directory.
+5. [Optional] Set `MEDRAG_CORPUS` environment variable or add it to a `.env` file in the root directory.
 
     ```bash
    export MEDRAG_CORPUS=""
