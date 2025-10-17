@@ -1,6 +1,6 @@
 # MedScore
 
-**Note: Checkout the `arxiv-reproducibility` branch for the exact code used in the paper, 2025 May arxiv version.**
+**Note: This is the code for the updated MedScore paper, 2025 October version. Check out the `arxiv-reproducibility` branch for the exact code used in the paper of 2025 May arxiv version.**
 
 Supporting code and data for MedScore, a medical chatbot factuality evaluation system that can adapt to other domains easily.
 See [the MedScore paper](https://arxiv.org/abs/2505.18452) for details. Following the structure of the paper (update MedScore taxonomy based on domain-specific requirements for valid claim definition, then change the MedScore Instructions and domain-specific In Context Learning examples), researchers can adapt this tool to their text domain optimally with minimal effort.
