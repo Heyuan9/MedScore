@@ -8,8 +8,8 @@ See [the MedScore paper](https://arxiv.org/abs/2505.18452) for details. Followin
 If you use this tool, please cite
 
 ```
-@misc{huang2025medscorefactualityevaluationfreeform,
-      title={MedScore: Factuality Evaluation of Free-Form Medical Answers}, 
+@misc{huang2025medscoregeneralizablefactualityevaluation,
+      title={MedScore: Generalizable Factuality Evaluation of Free-Form Medical Answers by Domain-adapted Claim Decomposition and Verification}, 
       author={Heyuan Huang and Alexandra DeLucia and Vijay Murari Tiyyala and Mark Dredze},
       year={2025},
       eprint={2505.18452},
