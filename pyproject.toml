@@ -46,6 +46,7 @@ dependencies = [
     "nest_asyncio",
     "sentence_transformers",
     "python-dotenv",
+    "vllm",
     "registrable==0.0.4"
 ]
 
