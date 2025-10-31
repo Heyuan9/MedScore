@@ -26,3 +26,4 @@ dependencies:
       - nest_asyncio
       - sentence-transformers
       - python-dotenv
+      - vllm
