@@ -159,7 +159,7 @@ All of the decomposition and verification arguments are built from the classes i
 # These paths are relative to where you run the script.
 input_file: "data/AskDocs.demo.jsonl"
 output_dir: "results"
-response_key: "response" # The 'response' is used as the answer_context for decomposition. However, if 'response' doesn't contain enough information and your dataset has 'question', you can input 'question' and change format_input("question_context","answer_context",) function of the MedScore class to incorporate two keys in the prompt as "Question_Context:{}\nAnswer_Context:{}\n".
+response_key: "response" # The 'response' is used as the answer_context for decomposition. However, if 'response' doesn't contain enough information and your dataset has 'question', you can input 'question' and change format_input("question_context","answer_context",) function of the MedScore class to incorporate two keys in the prompt as "Question Context:{}\nAnswer Context:{}\n".
 
 # --- Decomposition Configuration ---
 decomposer:
