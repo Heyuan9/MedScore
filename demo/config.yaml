@@ -10,9 +10,9 @@ response_key: "response"
 # --- Decomposition Configuration ---
 decomposer:
   type: "medscore"  # Options: medscore, factscore, dndscore, custom
-  model_name: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
-  server_path: "https://api.together.xyz/v1"
-  api_key: !env TOGETHER_API_KEY
+  model_name: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"  #change to gpt-4o-mini or gpt-4o for MedScore decomposition
+  server_path: "https://api.together.xyz/v1"   #change to https://api.openai.com/v1 to use GPT models
+  api_key: !env TOGETHER_API_KEY    #change to OPENAI_API_KEY to use GPT models
 
 # --- Verification Configuration ---
 verifier:
