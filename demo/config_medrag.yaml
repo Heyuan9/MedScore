@@ -18,7 +18,7 @@ decomposer:
 verifier:
   type: "medrag"
   corpus_name: "Textbooks"  # "PubMed", "Textbooks", "StatPearls", "Wikipedia", "MedCorp", "MEDIC"
-  n_returned_docs: 5
+  n_returned_docs: 10
   cache: false  # Set to true for large datasets to improve performance
   db_dir: "."
   model_name: "gpt-4o"
