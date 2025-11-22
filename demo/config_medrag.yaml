@@ -22,4 +22,4 @@ verifier:
   cache: false  # Set to true for large datasets to improve performance
   db_dir: "."
   model_name: "gpt-4o"
-  server_path: "https://api.openai.com/v1"
+  server_path: "https://api.openai.com/v1"   #set the server_path to your GPU server when using HuggingFace models via vLLM server_path
