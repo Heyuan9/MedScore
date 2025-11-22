@@ -19,4 +19,4 @@ verifier:
   type: "provided"
   provided_evidence_path: "../data/askdocsai_evidence.json"
   model_name: "gpt-4o"
-  server_path: "https://api.openai.com/v1"
+  server_path: "https://api.openai.com/v1"  #set the server_path to your GPU server when using HuggingFace models via vLLM server_path
