@@ -1,5 +1,7 @@
 # MedScore
 
+Update: Accepted to ACL 2026, to be published on July 2, 2026. We will update the camera-ready version of the paper and code before publication.
+
 **Note: This is the code for the updated MedScore paper, 2025 October version. Check out the `arxiv-reproducibility` branch for the exact code used in the paper of 2025 May arxiv version.**
 
 Supporting code and data for MedScore, a medical chatbot factuality evaluation system that can adapt to other domains easily.
