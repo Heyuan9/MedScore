@@ -204,7 +204,7 @@ verifier:
   model_name: "mistralai/Mistral-Small-24B-Instruct-2501"  # Change to the latest released LLMs for better performance
   server_path: "http://localhost:8000/v1"
   corpus_name: "Textbooks"  # options: "PubMed", "Textbooks", "StatPearls", "Wikipedia", "MedCorp", "MEDIC". Our paper uses MEDIC (PubMed+StatPearls+Textbooks).
-  n_returned_docs: 5
+  n_returned_docs: 10
   cache: false  # Set to true for large datasets to improve performance
   db_dir: "."
 ```
