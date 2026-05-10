@@ -122,7 +122,7 @@ There are three main sections of a MedScore config file.
     - Default: `MedScore`
   - `prompt_path`: Path to a `txt` file containing a system prompt for decomposition. See the prompts in `medscore/prompts.py` for examples. **This should only be set if you are using a custom decomposer**.
   - `model_name`: The name of the model for decomposing the response into claims. It should the model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or locally-hosted vLLM model.
-    - Default: `gpt-4o-mini`
+    - Default: `gpt-4o-mini` for paper reproducibility only. We recommend using the latest released LLMs, such as gpt-5.5 or gpt-5.4, for the best performance.
   - `server_path`: The server path for the decomposition model. 
     - Default: `https://api.openai.com/v1`
   - `api_key`: API key for the specified `server_path`. You can use environment variables by prefacing them with `!env`. Example: `!env TOGETHER_API_KEY`
@@ -138,7 +138,7 @@ There are three main sections of a MedScore config file.
   - `response_key`: JSON key corresponding to the medical chatbot response. The default is `response`.
   - `prompt_path`: Path to a `txt` file containing a system prompt for decomposition. See the prompts in `medscore/prompts.py` for examples. **This should only be set if you are using a custom decomposer**.
   - `model_name`: The name of the model for verifying the response. It should be a model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or a locally-hosted vLLM model.
-    - Default: `gpt-4o` The paper use `mistralai/Mistral-Small-24B-Instruct-2501`
+    - Default: `gpt-4o` The paper used `mistralai/Mistral-Small-24B-Instruct-2501` (released in 2025-01), but we recommend using the latest released LLMs for the best performance.
   - `server_path`: The server path for the verification model. Refer to the [vLLM](https://huggingface.co/mistralai/Mistral-Small-24B-Instruct-2501) Hugging Face tutorial for open-sourced LLM server path: `http://<your-server>:8000/v1`
     - Default: `https://api.openai.com/v1`
   - `api_key`: API key for the specified `server_path`. You can use environment variables by prefacing them with `!env`. Example: `!env TOGETHER_API_KEY`
@@ -166,14 +166,14 @@ response_key: "response" # The 'response' is used as the answer_context for deco
 # --- Decomposition Configuration ---
 decomposer:
   type: "medscore"
-  model_name: "gpt-4o-mini"
+  model_name: "gpt-4o-mini"  # Change to gpt-5.4 or gpt-5.5 for better performance
   server_path: "https://api.openai.com/v1"
   # api_key: "YOUR_API_KEY" # Optional: can be set here or via environment variable.
 
 # --- Verification Configuration ---
 verifier:
   type: "internal"
-  model_name: "gpt-4o"
+  model_name: "gpt-4o"  # Change to the latest released LLMs for better performance
   server_path: "https://api.openai.com/v1"
 ```
 
@@ -194,16 +194,16 @@ response_key: "response"
 # --- Decomposition Configuration ---
 decomposer:
   type: "medscore"
-  model_name: "gpt-4o-mini"
+  model_name: "gpt-4o-mini"  # Change to gpt-5.4 or gpt-5.5 for better performance
   server_path: "https://api.openai.com/v1"
   # api_key: "YOUR_API_KEY" # Optional: can be set here or via environment variable.
 
 # --- Verification Configuration ---
 verifier:
   type: "medrag"
-  model_name: "mistralai/Mistral-Small-24B-Instruct-2501"
+  model_name: "mistralai/Mistral-Small-24B-Instruct-2501"  # Change to the latest released LLMs for better performance
   server_path: "http://localhost:8000/v1"
-  corpus_name: "Textbooks"  # options: "PubMed", "Textbooks", "StatPearls", "Wikipedia", "MedCorp", "MEDIC". Our paper uses MEDIC.
+  corpus_name: "Textbooks"  # options: "PubMed", "Textbooks", "StatPearls", "Wikipedia", "MedCorp", "MEDIC". Our paper uses MEDIC (PubMed+StatPearls+Textbooks).
   n_returned_docs: 5
   cache: false  # Set to true for large datasets to improve performance
   db_dir: "."
