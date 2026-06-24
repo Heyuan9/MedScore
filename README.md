@@ -1,23 +1,31 @@
 # MedScore
 
-Update: Accepted to ACL 2026, to be published on July 2, 2026. We will update the camera-ready version of the paper and code before publication.
 
-**Note: This is the code for the updated MedScore paper, 2025 October version. Check out the `arxiv-reproducibility` branch for the exact code used in the paper of 2025 May arxiv version.**
-
-Supporting code and data for MedScore, a medical chatbot factuality evaluation system that can adapt to other domains easily.
-See [the MedScore paper](https://arxiv.org/abs/2505.18452) for details. Following the structure of the paper (update MedScore taxonomy based on domain-specific requirements for valid claim definition, then change the MedScore Instructions and domain-specific In Context Learning examples), researchers can adapt this tool to their text domain optimally with minimal effort.
+Supporting code and data for MedScore at ACL 2026, a medical chatbot factuality evaluation system that can adapt to other domains easily.
+See [the MedScore paper](https://aclanthology.org/2026.findings-acl.693/) for details. Following the structure of the paper (update MedScore taxonomy based on domain-specific requirements for valid claim definition, then change the MedScore Instructions and domain-specific In Context Learning examples), researchers can adapt this tool to their text domain optimally with minimal effort.
 
 If you use this tool, please cite
 
 ```
-@misc{huang2025medscoregeneralizablefactualityevaluation,
-      title={MedScore: Generalizable Factuality Evaluation of Free-Form Medical Answers by Domain-adapted Claim Decomposition and Verification}, 
-      author={Heyuan Huang and Alexandra DeLucia and Vijay Murari Tiyyala and Mark Dredze},
-      year={2025},
-      eprint={2505.18452},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2505.18452}, 
+@inproceedings{huang-etal-2026-medscore,
+    title = "{M}ed{S}core: Generalizable Factuality Evaluation of Open-ended Long-form Medical Answers by Domain-adapted Claim Decomposition and Verification",
+    author = "Huang, Heyuan  and
+      DeLucia, Alexandra  and
+      Tiyyala, Vijay Murari  and
+      Dredze, Mark",
+    editor = "Liakata, Maria  and
+      Moreira, Viviane P.  and
+      Zhang, Jiajun  and
+      Jurgens, David",
+    booktitle = "Findings of the {A}ssociation for {C}omputational {L}inguistics: {ACL} 2026",
+    month = jul,
+    year = "2026",
+    address = "San Diego, California, United States",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2026.findings-acl.693/",
+    pages = "14149--14180",
+    ISBN = "979-8-89176-395-1",
+    abstract = "While Large Language Models (LLMs) can generate fluent and convincing responses, they are not necessarily correct. This is especially apparent in the popular decompose-then-verify factuality evaluation pipeline, where LLMs evaluate generated text by decomposing it into individual, valid claims. Factuality evaluation is especially important for medical answers, since incorrect medical information could seriously harm the patient. However, existing factuality systems are a poor match for the medical domain, as they are typically only evaluated on objective, entity-centric, formulaic texts such as biographies and historical topics. This differs from condition-dependent, conversational, hypothetical, sentence-structure diverse, and subjective medical answers, making decomposition into valid facts challenging. We propose MedScore, a new pipeline to decompose medical answers into condition-aware valid facts and verify against in-domain corpora. Our method extracts up to three times as many valid facts as existing methods, reducing hallucination and vague references, and retaining condition-dependency in facts. We also find MedScore is generalizable to non-medical domains without any specific tuning. The resulting factuality score substantially varies by decomposition method, verification corpus, and used backbone LLM, highlighting the importance of customizing each step for reliable factuality evaluation by using our generalizable and modularized pipeline for domain adaptation."
 }
 ```
 
