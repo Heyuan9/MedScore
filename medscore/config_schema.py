@@ -90,6 +90,11 @@ class MedScoreConfig(BaseModel):
     input_file: str
     output_dir: str
     response_key: str = "response"
+    # JSON key holding the user question. Only read when qa_mode is True.
+    question_key: str = "question"
+    # Whether to put the question in the decomposition context. None means "not chosen":
+    # an explicit --qa_mode (or a config value) is required when the decomposition step runs.
+    qa_mode: Optional[bool] = None
     # If True, MedScore will expect each input record to include a pre-senticized
     # list of sentence objects under the key "sentences" and will use those
     # instead of running its internal sentence-splitting (senticizing) step.

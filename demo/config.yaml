@@ -6,6 +6,8 @@
 # input_file: "data/AskDocs.demo.jsonl"
 output_dir: "results"
 response_key: "response"
+question_key: "question"  # JSON key holding the user question (only read when qa_mode is true)
+qa_mode: false            # AskDocs has a long question and a self-contained response. See README "QA mode".
 
 # --- Decomposition Configuration ---
 decomposer:

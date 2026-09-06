@@ -13,6 +13,7 @@ import jsonlines
 
 from .utils import parse_sentences, load_config
 from .config_schema import MedScoreConfig
+from .decomposer import QA_MODE_DECOMPOSERS
 from .registry import build_component
 
 
@@ -31,9 +32,14 @@ class MedScore:
         """
         Initializes the MedScore pipeline from a validated Pydantic config object.
         """
+        # If True, the question is included in the decomposition context. It lives at the top
+        # level of the config, so it has to be passed into the decomposer explicitly.
+        self.qa_mode = bool(config.qa_mode)
+        self.question_key = config.question_key
+
         # Build the decomposer and verifier from the config using the registry
         logger.info(f"Building decomposer of type: {config.decomposer.type}")
-        self.decomposer = build_component(config.decomposer, "decomposer")
+        self.decomposer = build_component(config.decomposer, "decomposer", qa_mode=self.qa_mode)
 
         logger.info(f"Building verifier of type: {config.verifier.type}")
         self.verifier = build_component(config.verifier, "verifier")
@@ -61,6 +67,17 @@ class MedScore:
             else:
                 sentences = parse_sentences(item[self.response_key])
 
+            # The question is read from the top level of the record, independently of 'sentences'.
+            # Keep the raw value: it goes into the prompt verbatim, whitespace included.
+            question = ""
+            if self.qa_mode:
+                question = item.get(self.question_key) or ""
+                if not question.strip():
+                    logger.warning(
+                        f"ID '{item.get('id')}' has no '{self.question_key}' while qa_mode=True. "
+                        f"Decomposing with an empty question context."
+                    )
+
             for idx, sentence in enumerate(sentences):
                 # Support sentence as dict (with 'text' and optional 'sentence_id') or as plain string
                 if isinstance(sentence, dict):
@@ -78,12 +95,15 @@ class MedScore:
                         (s.get("text") if isinstance(s, dict) else str(s)) for s in sentences
                     )
 
-                decomposer_input.append({
+                record = {
                     "id": item.get("id"),
                     "sentence_id": sentence_id,
                     "context": context,
                     "sentence": sentence_text,
-                })
+                }
+                if self.qa_mode:
+                    record["question"] = question
+                decomposer_input.append(record)
 
         if not decomposer_input:
             logger.error("No valid inputs found for the decomposer.")
@@ -111,8 +131,20 @@ def parse_args():
     parser.add_argument("--output_dir", type=str, help="Override the output directory specified in the config.")
     parser.add_argument("--decompose_only", action="store_true", help="Only run the decomposition step.")
     parser.add_argument("--verify_only", action="store_true", help="Only run the verification step (requires existing decomposition file).")
+    parser.add_argument(
+        "--qa_mode", type=str.lower, choices=["true", "false"], default=None,
+        help="Whether to include the question in the decomposition context. Only supported by the "
+             "'medscore' and 'custom' decomposers, and required whenever the decomposition step "
+             "runs with one of them (or set 'qa_mode' in the config file). Use 'true' when the "
+             "question is short and the response is long, so that the response only makes sense "
+             "against the question. Use 'false' when the question is long and carries noisy, "
+             "unnecessary information that would distract the decomposer from the response.",
+    )
     parser.add_argument("--debug", action="store_true", help="Print debug logs.")
     args = parser.parse_args()
+    # Convert to a real bool, keeping None to mean "not specified on the command line".
+    if args.qa_mode is not None:
+        args.qa_mode = args.qa_mode == "true"
     return args
 
 
@@ -135,6 +167,21 @@ def main():
         logger.error("Input file must be specified either in the config or via --input_file.")
         sys.exit(1)
 
+    # qa_mode only means something for the decomposers that use the response as context, and
+    # only when the decomposition step actually runs. Everywhere else it may stay unset.
+    decomposer_type = medscore_config.decomposer.type
+    if args.verify_only:
+        # Decomposition never runs, so qa_mode is irrelevant. Clear it so that it cannot
+        # reject a decomposer that does not support it.
+        medscore_config.qa_mode = None
+    elif decomposer_type in QA_MODE_DECOMPOSERS and medscore_config.qa_mode is None:
+        logger.error(
+            f"--qa_mode is required when running decomposition with the '{decomposer_type}' "
+            f"decomposer. Pass --qa_mode true or --qa_mode false, or set 'qa_mode' in the config "
+            f"file. See the 'QA mode' section of the README."
+        )
+        sys.exit(1)
+
     if not medscore_config.output_dir:
         medscore_config.output_dir = "."
         logger.warning("Output directory not specified. Defaulting to current directory.")
@@ -146,7 +193,11 @@ def main():
         os.makedirs(output_dir, exist_ok=True)
 
     # Initialize MedScore with the validated config
-    scorer = MedScore(medscore_config)
+    try:
+        scorer = MedScore(medscore_config)
+    except ValueError as e:
+        logger.error(str(e))
+        sys.exit(1)
 
     # Load data
     try:

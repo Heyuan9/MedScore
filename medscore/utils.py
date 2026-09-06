@@ -56,9 +56,19 @@ def load_config(
         logger.error(f"Error parsing YAML config file: {e}")
         sys.exit(1)
 
+    # 'qa_mode' and 'question_key' are top-level settings, but the README groups decomposition
+    # options under 'decomposer:', so warn instead of silently ignoring a misplaced key.
+    nested_decomposer = config_data.get("decomposer") or {}
+    for misplaced in ("qa_mode", "question_key"):
+        if misplaced in nested_decomposer:
+            logger.warning(
+                f"'{misplaced}' must be a top-level config key, not nested under 'decomposer:'. "
+                f"The nested value is ignored."
+            )
+
     # Apply command-line argument overrides
     if argument_overrides:
-        for arg_field in ["input_file", "output_dir"]:
+        for arg_field in ["input_file", "output_dir", "qa_mode"]:
             if arg_field in argument_overrides and argument_overrides[arg_field] is not None:
                 config_data[arg_field] = argument_overrides[arg_field]
         logger.debug(f"Applied argument overrides: {argument_overrides}")
