@@ -85,7 +85,11 @@ Setting this variable makes sure that the MedRAG corpus will only be downloaded 
 
 ## Running MedScore
 
-MedScore v0.1.1 is now run from the command line using a single configuration file, which makes managing experiments much easier.
+MedScore v0.1.2 is now run from the command line using a single configuration file, which makes managing experiments much easier.
+
+> **Upgrading from v0.1.1:** decomposition now requires you to choose `qa_mode`. Add `qa_mode: false`
+> to your existing config files to keep the previous behavior, or pass `--qa_mode false`. See
+> [QA mode](#qa-mode---qa_mode).
 
 ```bash
 python -m medscore.medscore --config /path/to/your/config.yaml
@@ -98,6 +102,8 @@ All options:
 - `--output_dir`: Path to save the intermediate and result files. Override the output directory specified in the config.
 - `--decompose_only`: Only run the decomposition step. Saves to `output_dir/decompositions.jsonl`.
 - `--verify_only`: Only run the verification step (requires an existing decomposition file in the `output_dir`) Saves to `output_dir/verifications.jsonl`.
+- `--qa_mode`: `true` or `false`. Whether to put the question in the decomposition context. **Required whenever the decomposition step runs with the `medscore` or `custom` decomposer**, unless `qa_mode` is set in the config file. Ignored with `--verify_only`, and not supported by `factscore` or `dndscore`. See [QA mode](#qa-mode---qa_mode).
+- `--debug`: Print debug logs.
 
 The final output is saved to `output_dir/output.jsonl`.
 
@@ -113,11 +119,16 @@ There are three main sections of a MedScore config file.
 **1. Main input/output**
    - `input_file`: Path to the input data file. It should be in `jsonl` format.
        - `id`: A unique identifier for the instance.
-       - `repsonse`: The text response from the medical chatbot. This key can be changed with `--response_key`.
+       - `response`: The text response from the medical chatbot. This key can be changed with `response_key`.
+       - `question`: The user question the response answers. Only read when `qa_mode` is `true`; the key can be changed with `question_key`.
        - Any other metadata.
-   - `output_dir`: Path to the output directory. The output files are `decompositions.jsonl`, `verifications.jsonl`, and `medscore_output.jsonl`.
+   - `output_dir`: Path to the output directory. The output files are `decompositions.jsonl`, `verifications.jsonl`, and `output.jsonl`.
      - Default: current directory
    - `response_key`: JSON key corresponding to the medical chatbot response. The default is `response`.
+   - `question_key`: JSON key corresponding to the user question. The default is `question`. Only read when `qa_mode` is `true`.
+   - `qa_mode`: Whether to put the question in the decomposition context. This is the only decomposition setting that also has a command-line flag, `--qa_mode`, which overrides the config value. See [QA mode](#qa-mode---qa_mode).
+
+   All of the keys in this section go at the **top level** of the YAML file, next to `input_file`. Nesting `response_key`, `question_key` or `qa_mode` under `decomposer:` has no effect (MedScore warns if you do).
 
 
 **2. Decomposition-related arguments**
@@ -126,7 +137,7 @@ There are three main sections of a MedScore config file.
       - `factscore`: FActScore prompt from [FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation (Min et al., EMNLP 2023)](https://aclanthology.org/2023.emnlp-main.741/)
       - `medscore`: Our work.
       - `dndscore`: Prompt from [DnDScore: Decontextualization and Decomposition for Factuality Verification in Long-Form Text Generation (Wanner et al., arXiv 2024)](https://arxiv.org/abs/2412.13175)
-      - `custom`: A custom user-written prompt with instructions and in-domain examples best for your dataset. The `decomp_prompt_path` must also be provided. We recommend following the format of MedScore_prompt.txt to make the first customization try easier.
+      - `custom`: A custom user-written prompt with instructions and in-domain examples best for your dataset. The `prompt_path` must also be provided. We recommend following the format of `prompt/Custom_prompt.txt` to make the first customization try easier.
     - Default: `MedScore`
   - `prompt_path`: Path to a `txt` file containing a system prompt for decomposition. See the prompts in `medscore/prompts.py` for examples. **This should only be set if you are using a custom decomposer**.
   - `model_name`: The name of the model for decomposing the response into claims. It should the model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or locally-hosted vLLM model.
@@ -143,8 +154,6 @@ There are three main sections of a MedScore config file.
       - `internal`: Verify against the internal knowledge of an LLM. 
       - `provided`: Verify against pre-collected user-provided evidence. Requires `provided_evidence_path` to be set.
     - Default: `internal`
-  - `response_key`: JSON key corresponding to the medical chatbot response. The default is `response`.
-  - `prompt_path`: Path to a `txt` file containing a system prompt for decomposition. See the prompts in `medscore/prompts.py` for examples. **This should only be set if you are using a custom decomposer**.
   - `model_name`: The name of the model for verifying the response. It should be a model identifier for a hosted HuggingFace model, OpenAI model, TogetherAI model, or a locally-hosted vLLM model.
     - Default: `gpt-4o` The paper used `mistralai/Mistral-Small-24B-Instruct-2501` (released in 2025-01), but we recommend using the latest released LLMs for the best performance.
   - `server_path`: The server path for the verification model. Refer to the [vLLM](https://huggingface.co/mistralai/Mistral-Small-24B-Instruct-2501) Hugging Face tutorial for open-sourced LLM server path: `http://<your-server>:8000/v1`
@@ -169,7 +178,9 @@ All of the decomposition and verification arguments are built from the classes i
 # These paths are relative to where you run the script.
 input_file: "data/AskDocs.demo.jsonl"
 output_dir: "results"
-response_key: "response" # The 'response' is used as the answer_context for decomposition. However, if 'response' doesn't contain enough information and your dataset has 'question', you can input 'question' and change format_input("question_context","answer_context",) function of the MedScore class to incorporate two keys in the prompt as "Question Context:{}\nAnswer Context:{}\n".
+response_key: "response"  # The 'response' is used as the context for decomposition.
+question_key: "question"  # JSON key holding the user question (only read when qa_mode is true).
+qa_mode: false            # Set to true if the response only makes sense against the question. See "QA mode".
 
 # --- Decomposition Configuration ---
 decomposer:
@@ -198,6 +209,8 @@ verifier:
 input_file: "data/AskDocs.demo.jsonl"
 output_dir: "results"
 response_key: "response"
+question_key: "question"
+qa_mode: false
 
 # --- Decomposition Configuration ---
 decomposer:
@@ -333,6 +346,55 @@ The AskDocs dataset is in the `./data` folder. It has 300 samples and 4 keys:
 
 The AskDocs.demo dataset has 20 random samples from the AskDocs dataset. It is more cost-efficient to experiment on this small-scale dataset.
 
+`./data/calmqa_english.jsonl` is the English subset of CaLMQA used in the paper. It has 96 samples, with
+`id`, `question`, `response`, and additional CaLMQA metadata. Unlike AskDocs its questions are short and
+its responses are long, which makes it the natural example for `qa_mode: true` (see [QA mode](#qa-mode---qa_mode)).
+
+### QA mode (`--qa_mode`)
+
+`qa_mode` controls whether the user's **question** is put in the decomposition context alongside the
+response. It changes only the user message sent to the decomposition model; the system prompt is
+identical either way.
+
+```text
+qa_mode: false (the default behavior)     qa_mode: true
+-------------------------------------     ---------------------------------------------
+Context: {response}                       Question Context: {question}
+Please breakdown the following
+sentence into independent facts:          Answer Context: {response}
+{sentence}                                Please breakdown the following sentence into
+Facts:                                    independent facts: {sentence}
+                                          Facts:
+```
+
+**Which value should I use?** It depends on the shape of your data.
+
+- **`false` — long question, noisy question.** When the question carries a lot of unnecessary
+  information that is not needed to interpret the response, feeding it to the decomposer distracts
+  the model and dilutes the response it is supposed to break down. `data/AskDocs.jsonl` is this case:
+  the question is a patient's free-form post that is mostly personal backstory,
+  and the chatbot response already restates whatever matters.
+- **`true` — short question, long response.** When the response is only interpretable against the
+  question, the decomposer needs the question to produce self-contained, decontextualized claims.
+  `data/calmqa_english.jsonl` is this case: a short question and a much longer
+  answer that refers back to entities introduced in the question.
+
+Because the right value is a property of your dataset and not something MedScore can detect, you must
+choose it explicitly: `--qa_mode` is **required** whenever the decomposition step runs with the
+`medscore` or `custom` decomposer, unless `qa_mode` is set in the config file.
+
+Notes and limitations:
+
+- Only the `medscore` and `custom` decomposers support `qa_mode`. `factscore` does not use the context
+  at all and `dndscore` builds its own prompt from the response, so both reject `qa_mode: true` with an
+  error rather than silently ignoring it.
+- The question is used **only** during decomposition. It is not added to the verifier prompt or to the
+  MedRAG retrieval query, and it does not appear in `decompositions.jsonl`, `verifications.jsonl`, or
+  `output.jsonl`.
+- `qa_mode` is ignored with `--verify_only`, since decomposition does not run.
+- If a record has no question (or an empty one) while `qa_mode: true`, MedScore logs a warning and
+  decomposes that record with an empty question context instead of failing.
+
 ### Presenticized (pre-senticized) inputs
 
 If your input data already contains sentence-level annotations (for example, produced by an external senticizer), MedScore can use those directly instead of running its internal sentence splitter. To enable this, add the top-level flag `presenticized: true` to your YAML config.
@@ -342,6 +404,7 @@ Behavior when presenticized is true:
 - Each item in `sentences` is a dict with a `text` field and an optional `sentence_id` field. If `sentence_id` is not provided, it will be auto-generated based on the list index.
 - If the original `response` (or configured `response_key`) is present, it will be used as the `context` passed to the decomposer; otherwise the context will be reconstructed by joining the provided sentence texts.
 - Records missing a valid `sentences` list will be skipped with a warning.
+- `presenticized` and `qa_mode` compose: when `qa_mode` is `true`, the question is read from `question_key` at the top level of the record, independently of `sentences`.
 
 Example YAML config enabling presenticized inputs:
 
@@ -349,6 +412,7 @@ Example YAML config enabling presenticized inputs:
 input_file: "data/AskDocs.demo.jsonl"
 output_dir: "results"
 response_key: "response"
+qa_mode: false
 presenticized: true
 
 decomposer:

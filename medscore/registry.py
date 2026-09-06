@@ -8,13 +8,15 @@ from .decomposer import Decomposer
 from .verifier import Verifier
 
 
-def build_component(config: BaseModel, component_type: str) -> Any:
+def build_component(config: BaseModel, component_type: str, **extra_params: Any) -> Any:
     """
     Builds a decomposer or verifier using its Registrable base class.
 
     Args:
         config: A Pydantic model instance from the config schema.
         component_type: The type of component to build ('decomposer' or 'verifier').
+        **extra_params: Additional keyword arguments to pass to the component, for settings
+            that live outside its own config section (e.g. the top-level `qa_mode`).
 
     Returns:
         An instantiated component object.
@@ -43,5 +45,6 @@ def build_component(config: BaseModel, component_type: str) -> Any:
     init_params = config.model_dump()
     if 'api_key' in init_params and isinstance(init_params['api_key'], SecretStr):
         init_params['api_key'] = init_params['api_key'].get_secret_value()
+    init_params.update(extra_params)
 
     return ComponentClass(**init_params)
